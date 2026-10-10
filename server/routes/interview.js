@@ -3,14 +3,31 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const router = express.Router();
 
-// Initialize Google Gemini API
-const getGeminiModel = () => {
+// Fallback models in case of high demand
+const MODEL_CANDIDATES = ['gemini-3.8-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-flash'];
+
+/**
+ * Helper to generate content with fallback models
+ */
+const generateContentWithFallback = async (prompt) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
     throw new Error('GEMINI_API_KEY is missing or invalid in server/.env');
   }
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  let lastError = null;
+  for (const modelName of MODEL_CANDIDATES) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (err) {
+      console.warn(`Model ${modelName} returned error: ${err.message}. Trying next candidate...`);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All Gemini AI model candidates failed.');
 };
 
 /**
@@ -21,13 +38,10 @@ router.post('/generate', async (req, res) => {
   try {
     const { topic = 'React.js', difficulty = 'Intermediate', questionCount = 3 } = req.body;
 
-    const model = getGeminiModel();
-
     const prompt = `You are a senior technical interviewer. Generate ${questionCount} concise interview questions for a ${difficulty} level candidate on the topic of "${topic}".
 Return the response as a clean JSON array of strings only, format: ["Question 1", "Question 2", "Question 3"]. Do not include any extra markdown text outside the JSON array.`;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const responseText = await generateContentWithFallback(prompt);
     
     // Parse JSON from AI response
     let questions;
@@ -66,8 +80,6 @@ router.post('/evaluate', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Question and answer are required.' });
     }
 
-    const model = getGeminiModel();
-
     const prompt = `You are an expert AI technical evaluator for an interview on ${topic}.
 Question: "${question}"
 Candidate Answer: "${answer}"
@@ -82,8 +94,7 @@ Evaluate the candidate's answer and return a raw JSON object matching this struc
 }
 Only output valid JSON. Do not include markdown code block formatting.`;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const responseText = await generateContentWithFallback(prompt);
     
     let evaluation;
     try {
