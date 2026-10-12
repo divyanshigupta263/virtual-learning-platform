@@ -1,4 +1,5 @@
 import express from 'express';
+import { saveTestResult, getDB } from '../db.js';
 
 const router = express.Router();
 
@@ -143,7 +144,7 @@ router.get('/:id', (req, res) => {
  * POST /api/test/:id/submit
  * Evaluates student submission, calculates score, and returns detailed performance review
  */
-router.post('/:id/submit', (req, res) => {
+router.post('/:id/submit', async (req, res) => {
   const test = MOCK_TESTS.find((t) => t.id === req.params.id);
 
   if (!test) {
@@ -178,7 +179,16 @@ router.post('/:id/submit', (req, res) => {
   const totalQuestions = test.questions.length;
   const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
   const passed = scorePercentage >= 60; // 60% passing threshold
-
+    // Automatically save result to MongoDB Atlas
+  await saveTestResult({
+    testId: test.id,
+    testTitle: test.title,
+    totalQuestions,
+    correctCount,
+    scorePercentage,
+    passed,
+    grade: scorePercentage >= 85 ? 'A' : scorePercentage >= 70 ? 'B' : scorePercentage >= 60 ? 'C' : 'F'
+  });
   res.json({
     success: true,
     testId: test.id,
@@ -194,5 +204,18 @@ router.post('/:id/submit', (req, res) => {
     breakdown
   });
 });
-
+/**
+ * GET /api/test/history/all
+ * Retrieves all saved student test results from MongoDB Atlas
+ */
+router.get('/history/all', async (req, res) => {
+  try {
+    const db = getDB();
+    if (!db) return res.json({ success: true, history: [] });
+    const history = await db.collection('test_results').find({}).sort({ savedAt: -1 }).toArray();
+    res.json({ success: true, count: history.length, history });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 export default router;

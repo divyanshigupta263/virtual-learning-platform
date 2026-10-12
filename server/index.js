@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import interviewRoutes from './routes/interview.js';
 import testRoutes from './routes/test.js';
+import { connectDB } from './db.js';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  await connectDB();
 });
