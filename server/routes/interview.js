@@ -124,5 +124,87 @@ Only output valid JSON. Do not include markdown code block formatting.`;
     });
   }
 });
+/**
+ * POST /api/interview/viva/question
+ * Generates a rapid-fire viva oral question for a chosen subject
+ */
+router.post('/viva/question', async (req, res) => {
+  try {
+    const { subject = 'Operating Systems', topic = 'Process Management' } = req.body;
 
+    const prompt = `You are a university viva examiner conducting an oral exam on "${subject}" (topic: ${topic}).
+Generate 1 direct, concise viva question testing core fundamental understanding.
+Return only the question text directly in 1-2 sentences. Do not include greetings or quotes.`;
+
+    const question = await generateContentWithFallback(prompt);
+
+    res.json({
+      success: true,
+      subject,
+      question: question.trim()
+    });
+  } catch (error) {
+    console.error('Error generating viva question:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate viva question.'
+    });
+  }
+});
+
+/**
+ * POST /api/interview/viva/evaluate
+ * Evaluates candidate oral answer: score (1-10), verdict, feedback & follow-up question
+ */
+router.post('/viva/evaluate', async (req, res) => {
+  try {
+    const { subject = 'Computer Science', question, answer } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({ success: false, error: 'Question and answer are required.' });
+    }
+
+    const prompt = `You are an academic viva examiner assessing a student oral answer in "${subject}".
+Viva Question: "${question}"
+Student Oral Answer: "${answer}"
+
+Evaluate the answer and return raw JSON strictly matching this format:
+{
+  "score": <number between 1 and 10>,
+  "verdict": "<Excellent | Satisfactory | Needs Revision>",
+  "examinerFeedback": "<1-2 sentences oral reaction explaining what was correct or missing>",
+  "followUpQuestion": "<1 logical follow-up viva question based on what the student said>"
+}
+Only output valid JSON. Do not include markdown code block formatting.`;
+
+    const responseText = await generateContentWithFallback(prompt);
+
+    let evaluation;
+    try {
+      const jsonStart = responseText.indexOf('{');
+      const jsonEnd = responseText.lastIndexOf('}') + 1;
+      evaluation = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+    } catch {
+      evaluation = {
+        score: 7,
+        verdict: 'Satisfactory',
+        examinerFeedback: responseText,
+        followUpQuestion: 'Can you elaborate further on this concept?'
+      };
+    }
+
+    res.json({
+      success: true,
+      subject,
+      question,
+      evaluation
+    });
+  } catch (error) {
+    console.error('Error evaluating viva answer:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to evaluate viva answer.'
+    });
+  }
+});
 export default router;

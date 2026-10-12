@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import interviewRoutes from './routes/interview.js';
+import testRoutes from './routes/test.js';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/interview', interviewRoutes);
+app.use('/api/test', testRoutes);
 
 // Health check route
 app.get('/api/status', (req, res) => {
