@@ -1,5 +1,6 @@
 import express from 'express';
 import { saveTestResult, getDB } from '../db.js';
+import { generateContentWithFallback } from './interview.js';
 
 const router = express.Router();
 
@@ -218,4 +219,80 @@ router.get('/history/all', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+/**
+ * POST /api/test/generate-ai-test
+ * Google Gemini dynamically generates a timed Multiple-Choice Quiz on any topic!
+ */
+router.post('/generate-ai-test', async (req, res) => {
+  try {
+    const { topic = 'Python Programming', difficulty = 'Intermediate', questionCount = 3 } = req.body;
+
+    const prompt = `You are an expert technical examiner creating a timed multiple-choice quiz on "${topic}" at "${difficulty}" difficulty.
+Generate ${questionCount} high-quality technical multiple-choice questions.
+Return raw JSON strictly matching this structure:
+{
+  "title": "${topic} (${difficulty})",
+  "subject": "${topic}",
+  "durationMinutes": 10,
+  "questions": [
+    {
+      "id": "q1",
+      "question": "<the question text>",
+      "options": ["<option 0>", "<option 1>", "<option 2>", "<option 3>"],
+      "correctOptionIndex": <0, 1, 2, or 3>,
+      "explanation": "<concise explanation why this option is correct>"
+    }
+  ]
+}
+Only output valid JSON. Do not include markdown code block formatting.`;
+
+    const responseText = await generateContentWithFallback(prompt);
+
+    let testData;
+    try {
+      const jsonStart = responseText.indexOf('{');
+      const jsonEnd = responseText.lastIndexOf('}') + 1;
+      testData = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+    } catch {
+      throw new Error('Failed to parse AI generated quiz format.');
+    }
+
+    // Save the new AI-generated test into MongoDB Atlas
+    const db = getDB();
+    let savedTestId = 'test-ai-' + Date.now();
+    if (db) {
+      const insertResult = await db.collection('tests').insertOne({
+        ...testData,
+        createdAt: new Date()
+      });
+      savedTestId = insertResult.insertedId.toString();
+    }
+
+    // Sanitize questions (hide correct answers so student cannot cheat)
+    const sanitizedQuestions = testData.questions.map(({ id, question, options }) => ({
+      id,
+      question,
+      options
+    }));
+
+    res.json({
+      success: true,
+      test: {
+        id: savedTestId,
+        title: testData.title,
+        subject: testData.subject,
+        durationMinutes: testData.durationMinutes || 10,
+        questions: sanitizedQuestions
+      }
+    });
+  } catch (error) {
+    console.error('Error generating AI test:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate AI test.'
+    });
+  }
+});
+
 export default router;

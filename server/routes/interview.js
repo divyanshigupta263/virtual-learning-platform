@@ -4,12 +4,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const router = express.Router();
 
 // Fallback models in case of high demand
-const MODEL_CANDIDATES = ['gemini-3.8-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-flash'];
-
+const MODEL_CANDIDATES = ['gemini-3-flash-preview', 'gemini-3.8-flash'];
 /**
  * Helper to generate content with fallback models
  */
-const generateContentWithFallback = async (prompt) => {
+export const generateContentWithFallback = async (prompt) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
     throw new Error('GEMINI_API_KEY is missing or invalid in server/.env');
