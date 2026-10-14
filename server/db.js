@@ -1,4 +1,12 @@
 import { MongoClient } from 'mongodb';
+import dns from 'dns';
+
+// Ensure reliable SRV DNS resolution for MongoDB Atlas on Windows/local networks
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch {
+  // Ignore if custom dns servers cannot be set
+}
 
 let db = null;
 let client = null;

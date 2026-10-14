@@ -1,5 +1,6 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { saveInterviewReport, getDB } from '../db.js';
 
 const router = express.Router();
 
@@ -110,6 +111,17 @@ Only output valid JSON. Do not include markdown code block formatting.`;
       };
     }
 
+    // Automatically save interview evaluation to MongoDB Atlas
+    await saveInterviewReport({
+      type: 'mock_interview',
+      topic,
+      question,
+      answer,
+      score: evaluation.score,
+      correctness: evaluation.correctness,
+      feedback: evaluation.feedback
+    });
+
     res.json({
       success: true,
       question,
@@ -192,6 +204,17 @@ Only output valid JSON. Do not include markdown code block formatting.`;
       };
     }
 
+    // Automatically save viva evaluation to MongoDB Atlas
+    await saveInterviewReport({
+      type: 'viva',
+      subject,
+      question,
+      answer,
+      score: evaluation.score,
+      verdict: evaluation.verdict,
+      examinerFeedback: evaluation.examinerFeedback
+    });
+
     res.json({
       success: true,
       subject,
@@ -206,4 +229,20 @@ Only output valid JSON. Do not include markdown code block formatting.`;
     });
   }
 });
+
+/**
+ * GET /api/interview/history/all
+ * Retrieves all saved interview & viva records from MongoDB Atlas
+ */
+router.get('/history/all', async (req, res) => {
+  try {
+    const db = getDB();
+    if (!db) return res.json({ success: true, history: [] });
+    const history = await db.collection('interview_history').find({}).sort({ savedAt: -1 }).toArray();
+    res.json({ success: true, count: history.length, history });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
