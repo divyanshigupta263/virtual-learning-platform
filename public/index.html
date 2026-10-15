@@ -106,9 +106,14 @@
           <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
             <i data-lucide="history" class="w-5 h-5 text-indigo-600"></i> Saved Interview Records
           </h3>
-          <button onclick="toggleInterviewHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
-            Close
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="clearInterviewHistoryData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+              Clear History
+            </button>
+            <button onclick="toggleInterviewHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
+              Close
+            </button>
+          </div>
         </div>
         <div id="interview-history-list" class="space-y-3 max-h-72 overflow-y-auto pr-1">
           <p class="text-sm text-slate-500 py-4 text-center">Loading past interview records...</p>
@@ -274,9 +279,14 @@
           <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
             <i data-lucide="history" class="w-5 h-5 text-violet-600"></i> Saved Test Records
           </h3>
-          <button onclick="toggleTestHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
-            Close
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="clearTestHistoryData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+              Clear History
+            </button>
+            <button onclick="toggleTestHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
+              Close
+            </button>
+          </div>
         </div>
         <div id="test-history-list" class="space-y-3 max-h-72 overflow-y-auto pr-1">
           <p class="text-sm text-slate-500 py-4 text-center">Loading past test records...</p>
@@ -423,9 +433,14 @@
           <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
             <i data-lucide="history" class="w-5 h-5 text-rose-600"></i> Saved Viva Scores
           </h3>
-          <button onclick="toggleVivaHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
-            Close
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="clearVivaHistoryData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+              Clear History
+            </button>
+            <button onclick="toggleVivaHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
+              Close
+            </button>
+          </div>
         </div>
         <div id="viva-history-list" class="space-y-3 max-h-72 overflow-y-auto pr-1">
           <p class="text-sm text-slate-500 py-4 text-center">Loading past viva records...</p>

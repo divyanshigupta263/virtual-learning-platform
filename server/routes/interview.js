@@ -1,6 +1,6 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { saveInterviewReport, getDB, getInterviewHistory } from '../db.js';
+import { saveInterviewReport, getDB, getInterviewHistory, clearInterviewHistory } from '../db.js';
 
 const router = express.Router();
 
@@ -238,6 +238,19 @@ router.get('/history/all', async (req, res) => {
   try {
     const history = await getInterviewHistory();
     res.json({ success: true, count: history.length, history });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST or DELETE /api/interview/history/clear
+ * Clears all interview & viva records
+ */
+router.all('/history/clear', async (req, res) => {
+  try {
+    await clearInterviewHistory();
+    res.json({ success: true, message: 'Interview & viva history cleared successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

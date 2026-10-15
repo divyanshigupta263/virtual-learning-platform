@@ -149,3 +149,33 @@ export const getInterviewHistory = async () => {
   const storage = readLocalStorage();
   return storage.interview_history || [];
 };
+
+/**
+ * Helper: Clear all test history records
+ */
+export const clearTestHistory = async () => {
+  const storage = readLocalStorage();
+  storage.test_results = [];
+  writeLocalStorage(storage);
+  if (db) {
+    try {
+      await db.collection('test_results').deleteMany({});
+    } catch {}
+  }
+  return true;
+};
+
+/**
+ * Helper: Clear all interview & viva records
+ */
+export const clearInterviewHistory = async () => {
+  const storage = readLocalStorage();
+  storage.interview_history = [];
+  writeLocalStorage(storage);
+  if (db) {
+    try {
+      await db.collection('interview_history').deleteMany({});
+    } catch {}
+  }
+  return true;
+};

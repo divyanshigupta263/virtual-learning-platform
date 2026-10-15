@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveTestResult, getDB, getTestHistory } from '../db.js';
+import { saveTestResult, getDB, getTestHistory, clearTestHistory } from '../db.js';
 import { generateContentWithFallback } from './interview.js';
 
 const router = express.Router();
@@ -213,6 +213,19 @@ router.get('/history/all', async (req, res) => {
   try {
     const history = await getTestHistory();
     res.json({ success: true, count: history.length, history });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST or DELETE /api/test/history/clear
+ * Clears all past test history
+ */
+router.all('/history/clear', async (req, res) => {
+  try {
+    await clearTestHistory();
+    res.json({ success: true, message: 'Test history cleared successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

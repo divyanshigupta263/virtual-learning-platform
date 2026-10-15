@@ -28,6 +28,16 @@ function refreshIcons() {
   }
 }
 
+// Helper to format ISO timestamp into readable Date & Time (e.g. Oct 15, 2026 • 8:15 PM)
+function formatDateTime(isoString) {
+  if (!isoString) return 'Just now';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return 'Recently';
+  const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${dateStr} • ${timeStr}`;
+}
+
 // Health check function
 async function checkServerHealth() {
   const statusText = document.getElementById('server-status-text');
@@ -283,7 +293,7 @@ async function toggleInterviewHistory() {
           </div>
           <div class="text-right">
             <span class="text-base font-extrabold text-emerald-600">${displayScore}</span>
-            <p class="text-[10px] text-slate-400">${new Date(item.savedAt).toLocaleDateString()}</p>
+            <p class="text-[10px] text-slate-400">${formatDateTime(item.savedAt)}</p>
           </div>
         `;
         list.appendChild(row);
@@ -293,6 +303,20 @@ async function toggleInterviewHistory() {
     }
   } catch (err) {
     list.innerHTML = `<p class="text-xs text-rose-500 py-3 text-center">Error loading history: ${err.message}</p>`;
+  }
+}
+
+// Clear Interview History
+async function clearInterviewHistoryData() {
+  if (!confirm('Are you sure you want to clear all saved interview history?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/interview/history/clear`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('interview-history-list').innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">No past interviews saved yet.</p>`;
+    }
+  } catch (err) {
+    alert('Failed to clear interview history: ' + err.message);
   }
 }
 
@@ -625,7 +649,7 @@ async function toggleTestHistory() {
             <span class="text-base font-extrabold ${item.passed ? 'text-emerald-600' : 'text-rose-600'}">
               ${item.scorePercentage}%
             </span>
-            <p class="text-[10px] text-slate-400">${new Date(item.savedAt).toLocaleDateString()}</p>
+            <p class="text-[10px] text-slate-400">${formatDateTime(item.savedAt)}</p>
           </div>
         `;
         list.appendChild(row);
@@ -635,6 +659,20 @@ async function toggleTestHistory() {
     }
   } catch (err) {
     list.innerHTML = `<p class="text-xs text-rose-500 py-3 text-center">Error loading history: ${err.message}</p>`;
+  }
+}
+
+// Clear Test History
+async function clearTestHistoryData() {
+  if (!confirm('Are you sure you want to clear all saved test records?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/test/history/clear`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('test-history-list').innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">No past test records saved yet.</p>`;
+    }
+  } catch (err) {
+    alert('Failed to clear test history: ' + err.message);
   }
 }
 
@@ -902,7 +940,7 @@ async function toggleVivaHistory() {
             </div>
             <div class="text-right">
               <span class="text-base font-extrabold text-emerald-600">${item.score}/10</span>
-              <p class="text-[10px] text-slate-400">${new Date(item.savedAt).toLocaleDateString()}</p>
+              <p class="text-[10px] text-slate-400">${formatDateTime(item.savedAt)}</p>
             </div>
           `;
           list.appendChild(row);
@@ -913,5 +951,19 @@ async function toggleVivaHistory() {
     }
   } catch (err) {
     list.innerHTML = `<p class="text-xs text-rose-500 py-3 text-center">Error loading history: ${err.message}</p>`;
+  }
+}
+
+// Clear Viva History
+async function clearVivaHistoryData() {
+  if (!confirm('Are you sure you want to clear all saved viva records?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/interview/history/clear`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('viva-history-list').innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">No past viva records saved yet.</p>`;
+    }
+  } catch (err) {
+    alert('Failed to clear viva history: ' + err.message);
   }
 }
