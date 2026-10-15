@@ -34,51 +34,32 @@ Developed as the **Core AI & Assessment Engine** for the 4-member final year pro
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React.js (v18), Vite, Tailwind CSS, Lucide React Icons
-- **Backend**: Node.js, Express.js (ES Modules, RESTful APIs)
-- **Artificial Intelligence**: Google Gemini API (`@google/generative-ai`, `gemini-3-flash-preview`)
-- **Database**: Native MongoDB Driver (`mongodb`) connected to **MongoDB Atlas Cloud**
-- **Speech Integration**: Web Speech API (`SpeechSynthesis` & `webkitSpeechRecognition`)
+- **Frontend**: Pure HTML5, CSS3, Modern JavaScript (ES6+), Tailwind CSS (CDN), Lucide Icons
+- **Backend**: Node.js, Express.js (ES Modules, RESTful APIs, Static File Hosting)
+- **Artificial Intelligence**: Google Gemini API (`@google/generative-ai`, `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`)
+- **Database**: MongoDB Atlas Cloud + Local Persistent Fallback (`data_storage.json`)
+- **Speech Integration**: Web Speech API (`SpeechSynthesis` Text-to-Speech & `webkitSpeechRecognition` Speech-to-Text)
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18+)
-- Active Google Gemini API Key
-- MongoDB Atlas cluster connection URI
-
-### 1. Clone & Setup
-```bash
-git clone https://github.com/divyanshigupta263/virtual-learning-platform.git
-cd virtual-learning-platform
-```
-
-### 2. Configure Backend Environment
-Navigate to `server/` and create your `.env` file:
-```env
-PORT=5000
-GEMINI_API_KEY=your_gemini_api_key_here
-MONGODB_URI=your_mongodb_atlas_connection_string
-```
-
-### 3. Start the Backend Server
+### 1. Install Dependencies & Configure
+In the `server/` directory, ensure dependencies are installed and `.env` has your keys:
 ```bash
 cd server
 npm install
-npm start
 ```
-*Backend runs on `http://localhost:5000`*
 
-### 4. Start the React Frontend
-In a second terminal:
+### 2. Run the Platform (Single Command!)
 ```bash
-cd client
-npm install
-npm run dev
+node index.js
 ```
-*Frontend runs on `http://localhost:3000`*
+Open **[http://localhost:5000](http://localhost:5000)** in any browser. The entire application runs directly!
+
+*Alternative for VS Code*: Right-click `public/index.html` and click **"Open with Live Server"** (runs on port 5500 while connected to backend on port 5000).
+
+*(Optional React Frontend)*: A React 18 / Vite version is also maintained in `client/` (`cd client && npm run dev`).
 
 ---
 
