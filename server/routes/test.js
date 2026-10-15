@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveTestResult, getDB } from '../db.js';
+import { saveTestResult, getDB, getTestHistory } from '../db.js';
 import { generateContentWithFallback } from './interview.js';
 
 const router = express.Router();
@@ -211,9 +211,7 @@ router.post('/:id/submit', async (req, res) => {
  */
 router.get('/history/all', async (req, res) => {
   try {
-    const db = getDB();
-    if (!db) return res.json({ success: true, history: [] });
-    const history = await db.collection('test_results').find({}).sort({ savedAt: -1 }).toArray();
+    const history = await getTestHistory();
     res.json({ success: true, count: history.length, history });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -258,19 +256,43 @@ Only output valid JSON. Do not include markdown code block formatting.`;
       throw new Error('Failed to parse AI generated quiz format.');
     }
 
-    // Save the new AI-generated test into MongoDB Atlas
+    // Normalize questions to guarantee valid fields and reliable IDs
+    const normalizedQuestions = (testData.questions || []).map((q, idx) => ({
+      id: q.id ? String(q.id) : `q_${idx + 1}`,
+      question: q.question || `Question ${idx + 1}`,
+      options: Array.isArray(q.options) && q.options.length >= 2 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+      correctOptionIndex: typeof q.correctOptionIndex === 'number' && q.correctOptionIndex >= 0 ? q.correctOptionIndex : 0,
+      explanation: q.explanation || 'Refer to documentation for this concept.'
+    }));
+
+    const savedTestId = 'test-ai-' + Date.now();
+    const testRecord = {
+      id: savedTestId,
+      title: testData.title || `${topic} (${difficulty})`,
+      subject: testData.subject || topic,
+      difficulty: difficulty,
+      durationMinutes: testData.durationMinutes || 10,
+      questions: normalizedQuestions
+    };
+
+    // Save the new AI-generated test into MongoDB Atlas if connected
     const db = getDB();
-    let savedTestId = 'test-ai-' + Date.now();
     if (db) {
-      const insertResult = await db.collection('tests').insertOne({
-        ...testData,
-        createdAt: new Date()
-      });
-      savedTestId = insertResult.insertedId.toString();
+      try {
+        await db.collection('tests').insertOne({
+          ...testRecord,
+          createdAt: new Date()
+        });
+      } catch (e) {
+        console.warn('Atlas quiz save notice:', e.message);
+      }
     }
 
+    // Crucial: Cache in MOCK_TESTS array so POST /:id/submit can evaluate and score it!
+    MOCK_TESTS.push(testRecord);
+
     // Sanitize questions (hide correct answers so student cannot cheat)
-    const sanitizedQuestions = testData.questions.map(({ id, question, options }) => ({
+    const sanitizedQuestions = normalizedQuestions.map(({ id, question, options }) => ({
       id,
       question,
       options

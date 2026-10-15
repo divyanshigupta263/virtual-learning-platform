@@ -129,7 +129,9 @@ export default function MockInterview() {
                     <p className="text-xs text-slate-600 mt-1 line-clamp-1">{item.question}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-extrabold text-emerald-600">{item.score}/100</span>
+                    <span className="text-base font-extrabold text-emerald-600">
+                      {item.type === 'viva' ? `${item.score}/10` : `${item.score}/100`}
+                    </span>
                     <p className="text-[10px] text-slate-400">{new Date(item.savedAt).toLocaleDateString()}</p>
                   </div>
                 </div>

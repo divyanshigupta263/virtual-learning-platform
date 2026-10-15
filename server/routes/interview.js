@@ -1,11 +1,11 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { saveInterviewReport, getDB } from '../db.js';
+import { saveInterviewReport, getDB, getInterviewHistory } from '../db.js';
 
 const router = express.Router();
 
-// Fallback models in case of high demand
-const MODEL_CANDIDATES = ['gemini-3-flash-preview', 'gemini-3.8-flash'];
+// Verified active and responsive models
+const MODEL_CANDIDATES = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
 /**
  * Helper to generate content with fallback models
  */
@@ -236,9 +236,7 @@ Only output valid JSON. Do not include markdown code block formatting.`;
  */
 router.get('/history/all', async (req, res) => {
   try {
-    const db = getDB();
-    if (!db) return res.json({ success: true, history: [] });
-    const history = await db.collection('interview_history').find({}).sort({ savedAt: -1 }).toArray();
+    const history = await getInterviewHistory();
     res.json({ success: true, count: history.length, history });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
