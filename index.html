@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Virtual Learning Platform - Student Dashboard</title>
+  
+  <!-- Tailwind CSS via CDN (Modern utility classes, zero build tools required) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20">
+          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-slate-900 tracking-tight leading-tight">Virtual Learning Platform</h1>
+          <p class="text-xs text-slate-500 font-medium">BCA Final Year Project • AI & Assessment System</p>
+        </div>
+      </div>
+
+      <!-- Server Status Badge -->
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-semibold text-emerald-700">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="server-status-text">Backend Connected</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 border-t border-slate-100 overflow-x-auto">
+      <button id="tab-interview" onclick="switchTab('interview')" class="nav-tab active-tab">
+        <i data-lucide="bot" class="w-4 h-4"></i>
+        <span>AI Mock Interview</span>
+      </button>
+
+      <button id="tab-test" onclick="switchTab('test')" class="nav-tab inactive-tab">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>Mock Test & Quiz</span>
+      </button>
+
+      <button id="tab-viva" onclick="switchTab('viva')" class="nav-tab inactive-tab">
+        <i data-lucide="mic" class="w-4 h-4"></i>
+        <span>AI Viva Examiner</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- =================================================== -->
+    <!-- MODULE 1: AI MOCK INTERVIEW                        -->
+    <!-- =================================================== -->
+    <section id="module-interview" class="space-y-6">
+      
+      <!-- Top Banner -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white border border-slate-200 p-6 rounded-2xl gap-4 shadow-sm">
+        <div class="flex items-center gap-4">
+          <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
+            <i data-lucide="bot" class="w-8 h-8"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">AI Mock Interview</h2>
+            <p class="text-sm text-slate-500 font-medium">Targeted technical interview simulations powered by Google Gemini AI</p>
+          </div>
+        </div>
+
+        <button onclick="toggleInterviewHistory()" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold flex items-center gap-2 border border-slate-200 transition shadow-sm">
+          <i data-lucide="history" class="w-4 h-4 text-indigo-600"></i>
+          <span>Past Interview History</span>
+        </button>
+      </div>
+
+      <!-- History Modal / Drawer for Interview -->
+      <div id="interview-history-container" class="hidden bg-white border border-indigo-200 p-6 rounded-2xl space-y-4 shadow-md">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-indigo-600"></i> Saved Interview Records
+          </h3>
+          <div class="flex items-center gap-2">
+            <button onclick="clearInterviewHistoryData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+              Clear History
+            </button>
+            <button onclick="toggleInterviewHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
+              Close
+            </button>
+          </div>
+        </div>
+        <div id="interview-history-list" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+          <p class="text-sm text-slate-500 py-4 text-center">Loading past interview records...</p>
+        </div>
+      </div>
+
+      <!-- Interview Setup Card (Shown initially) -->
+      <div id="interview-setup-card" class="bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900">Configure Your Interview Session</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Topic / Subject</label>
+            <select id="interview-topic" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+              <option value="React.js">React.js</option>
+              <option value="Node.js & Express">Node.js & Express</option>
+              <option value="Python Programming">Python Programming</option>
+              <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+              <option value="MongoDB & Databases">MongoDB & Databases</option>
+              <option value="System Design & Cloud">System Design & Cloud</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Difficulty Level</label>
+            <select id="interview-difficulty" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+              <option value="Beginner">Beginner (Basic Syntax & Concepts)</option>
+              <option value="Intermediate" selected>Intermediate (Real-world Scenarios)</option>
+              <option value="Advanced">Advanced (Architecture & Edge Cases)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Number of Questions</label>
+            <select id="interview-count" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none">
+              <option value="1">1 Question (Quick Practice)</option>
+              <option value="3" selected>3 Questions (Standard Round)</option>
+              <option value="5">5 Questions (Deep Drill)</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btn-start-interview" onclick="startInterviewSession()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+          <span>Start Interview Simulation</span>
+        </button>
+      </div>
+
+      <!-- Interview Active Question & Answer Card (Hidden initially) -->
+      <div id="interview-active-card" class="hidden bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm">
+        
+        <!-- Header & Progress -->
+        <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div>
+            <span id="interview-progress-badge" class="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold uppercase tracking-wider">
+              Question 1 of 3
+            </span>
+            <span id="interview-active-topic" class="text-xs font-semibold text-slate-500 ml-2">React.js</span>
+          </div>
+          <button onclick="resetInterviewSession()" class="text-xs font-semibold text-slate-500 hover:text-slate-800">
+            End Session
+          </button>
+        </div>
+
+        <!-- Question Display Box -->
+        <div class="p-5 bg-indigo-50/50 rounded-xl border border-indigo-100">
+          <h4 class="text-xs font-bold uppercase text-indigo-700 mb-1">Interviewer Question:</h4>
+          <p id="interview-question-text" class="text-base font-semibold text-slate-900 leading-relaxed"></p>
+        </div>
+
+        <!-- Candidate Answer Box -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">Your Technical Answer</label>
+          <textarea id="interview-answer-input" rows="5" placeholder="Explain your answer clearly and technically here..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none placeholder-slate-400"></textarea>
+        </div>
+
+        <!-- Action Submit Button -->
+        <button id="btn-submit-answer" onclick="submitInterviewAnswer()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Submit Answer for AI Evaluation</span>
+        </button>
+
+        <!-- Evaluation Results Display (Hidden until evaluation completes) -->
+        <div id="interview-evaluation-card" class="hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-5 animate-fade-in">
+          
+          <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+            <div class="flex items-center gap-3">
+              <i data-lucide="award" class="w-7 h-7 text-indigo-600"></i>
+              <div>
+                <h4 class="font-bold text-slate-900 text-base">AI Evaluation & Scorecard</h4>
+                <p class="text-xs text-slate-500">Evaluated by Google Gemini Technical Evaluator</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span id="eval-score" class="text-2xl font-black text-indigo-700">85</span>
+              <span class="text-xs text-slate-400">/100</span>
+            </div>
+          </div>
+
+          <!-- Correctness Badge -->
+          <div>
+            <span id="eval-correctness" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              Fully Correct
+            </span>
+          </div>
+
+          <!-- Constructive Feedback -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-1">
+            <h5 class="text-xs font-bold uppercase text-slate-500">Examiner Feedback</h5>
+            <p id="eval-feedback" class="text-sm text-slate-800 leading-relaxed"></p>
+          </div>
+
+          <!-- Missing Key Points -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
+            <h5 class="text-xs font-bold uppercase text-amber-600 flex items-center gap-1.5">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-amber-500"></i> Missing Key Technical Points
+            </h5>
+            <ul id="eval-missing-points" class="list-disc list-inside text-xs text-slate-700 space-y-1"></ul>
+          </div>
+
+          <!-- Improvement Suggestions -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-1">
+            <h5 class="text-xs font-bold uppercase text-indigo-600">Actionable Suggestions</h5>
+            <p id="eval-suggestions" class="text-xs text-slate-700 leading-relaxed"></p>
+          </div>
+
+          <!-- Next Question / Finish Button -->
+          <button id="btn-next-question" onclick="nextInterviewQuestion()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-md shadow-indigo-600/20">
+            <span>Next Question</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================== -->
+    <!-- MODULE 2: MOCK TEST & QUIZ                         -->
+    <!-- =================================================== -->
+    <section id="module-test" class="hidden space-y-6">
+      
+      <!-- Top Banner -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white border border-slate-200 p-6 rounded-2xl gap-4 shadow-sm">
+        <div class="flex items-center gap-4">
+          <div class="p-3 bg-violet-50 text-violet-600 rounded-xl border border-violet-100">
+            <i data-lucide="file-text" class="w-8 h-8"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Mock Test & Assessment Dashboard</h2>
+            <p class="text-sm text-slate-500 font-medium">Timed technical quizzes, AI dynamic quiz generator & auto-grading</p>
+          </div>
+        </div>
+
+        <button onclick="toggleTestHistory()" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold flex items-center gap-2 border border-slate-200 transition shadow-sm">
+          <i data-lucide="history" class="w-4 h-4 text-violet-600"></i>
+          <span>Past Test Scores</span>
+        </button>
+      </div>
+
+      <!-- History Modal / Drawer for Tests -->
+      <div id="test-history-container" class="hidden bg-white border border-violet-200 p-6 rounded-2xl space-y-4 shadow-md">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-violet-600"></i> Saved Test Records
+          </h3>
+          <div class="flex items-center gap-2">
+            <button onclick="clearTestHistoryData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+              Clear History
+            </button>
+            <button onclick="toggleTestHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
+              Close
+            </button>
+          </div>
+        </div>
+        <div id="test-history-list" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+          <p class="text-sm text-slate-500 py-4 text-center">Loading past test records...</p>
+        </div>
+      </div>
+
+      <!-- Catalog View (Shown when no active test) -->
+      <div id="test-catalog-container" class="space-y-6">
+        
+        <!-- AI Dynamic Quiz Generator Card -->
+        <div class="bg-gradient-to-r from-violet-50 via-white to-white border border-violet-200 p-6 rounded-2xl space-y-4 shadow-sm">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+            <h3 class="font-bold text-slate-900">Generate a Custom AI Quiz on Any Topic</h3>
+          </div>
+          <p class="text-xs text-slate-600">
+            Type any subject (e.g. Python OOP, Docker Containers, SQL Queries, DSA Trees) and Google Gemini AI will generate a fresh timed quiz instantly!
+          </p>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input id="ai-quiz-topic" type="text" placeholder="Enter topic (e.g., Python OOP, Docker Containers, DSA Trees)..." class="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-violet-500 focus:outline-none placeholder-slate-400" />
+            
+            <select id="ai-quiz-difficulty" class="bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-violet-500 focus:outline-none">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate" selected>Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+
+            <button id="btn-generate-ai-quiz" onclick="generateAiQuiz()" class="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-md shadow-violet-600/20 whitespace-nowrap">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Generate & Start</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Standard Practice Tests Grid -->
+        <div class="space-y-4">
+          <h3 class="text-base font-bold text-slate-900">Available Practice Tests</h3>
+          <div id="test-catalog-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamically populated by app.js -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Active Test Runner (Shown when a test is running) -->
+      <div id="test-runner-container" class="hidden bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm">
+        
+        <!-- Runner Top Bar with Timer -->
+        <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div>
+            <h3 id="runner-test-title" class="font-bold text-slate-900">Test Title</h3>
+            <p id="runner-test-subject" class="text-xs text-slate-500">Subject</p>
+          </div>
+
+          <div id="runner-timer-box" class="flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-amber-700 font-mono font-bold text-base border border-amber-300 shadow-xs">
+            <i data-lucide="clock" class="w-4 h-4 animate-pulse text-amber-600"></i>
+            <span id="runner-timer-text">10:00</span>
+          </div>
+        </div>
+
+        <!-- Questions List Container -->
+        <div id="runner-questions-list" class="space-y-6">
+          <!-- Dynamically populated by app.js -->
+        </div>
+
+        <!-- Action Buttons (Before Submission) -->
+        <div id="runner-action-bar" class="flex gap-4 pt-2">
+          <button id="btn-submit-test" onclick="submitTestAnswers()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-emerald-600/20">
+            Submit Test for Scoring
+          </button>
+          <button onclick="exitTestRunner()" class="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold border border-slate-200 transition">
+            Exit
+          </button>
+        </div>
+
+        <!-- Performance Summary Card (After Submission) -->
+        <div id="test-result-summary" class="hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 shadow-sm animate-fade-in">
+          <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+            <div class="flex items-center gap-3">
+              <i data-lucide="award" class="w-7 h-7 text-amber-500"></i>
+              <div>
+                <h4 class="font-bold text-slate-900 text-lg">Performance Report</h4>
+                <p class="text-xs text-slate-500 font-medium">Auto-graded & saved to database</p>
+              </div>
+            </div>
+
+            <span id="test-passed-badge" class="px-4 py-1.5 rounded-full font-bold text-xs bg-emerald-100 text-emerald-800 border border-emerald-300">
+              PASSED
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <p class="text-xs text-slate-500 mb-1">Score</p>
+              <p id="test-stat-score" class="text-xl font-bold text-violet-700">4 / 4</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <p class="text-xs text-slate-500 mb-1">Percentage</p>
+              <p id="test-stat-percentage" class="text-xl font-bold text-emerald-600">100%</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200">
+              <p class="text-xs text-slate-500 mb-1">Grade</p>
+              <p id="test-stat-grade" class="text-xl font-bold text-amber-600">A</p>
+            </div>
+          </div>
+
+          <button onclick="exitTestRunner()" class="w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-md shadow-violet-600/20">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            <span>Back to Test Catalog</span>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =================================================== -->
+    <!-- MODULE 3: AI VIVA (ORAL EXAMINER)                  -->
+    <!-- =================================================== -->
+    <section id="module-viva" class="hidden space-y-6">
+      
+      <!-- Top Banner -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white border border-slate-200 p-6 rounded-2xl gap-4 shadow-sm">
+        <div class="flex items-center gap-4">
+          <div class="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
+            <i data-lucide="mic" class="w-8 h-8"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">AI Viva Oral Examiner</h2>
+            <p class="text-sm text-slate-500 font-medium">Simulate rapid oral technical examinations with interactive voice & examiner feedback</p>
+          </div>
+        </div>
+
+        <button onclick="toggleVivaHistory()" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold flex items-center gap-2 border border-slate-200 transition shadow-sm">
+          <i data-lucide="history" class="w-4 h-4 text-rose-600"></i>
+          <span>Past Viva Records</span>
+        </button>
+      </div>
+
+      <!-- History Modal / Drawer for Viva -->
+      <div id="viva-history-container" class="hidden bg-white border border-rose-200 p-6 rounded-2xl space-y-4 shadow-md">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-rose-600"></i> Saved Viva Scores
+          </h3>
+          <div class="flex items-center gap-2">
+            <button onclick="clearVivaHistoryData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200">
+              Clear History
+            </button>
+            <button onclick="toggleVivaHistory()" class="text-xs text-slate-600 hover:text-slate-900 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition">
+              Close
+            </button>
+          </div>
+        </div>
+        <div id="viva-history-list" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+          <p class="text-sm text-slate-500 py-4 text-center">Loading past viva records...</p>
+        </div>
+      </div>
+
+      <!-- Viva Setup Card -->
+      <div id="viva-setup-card" class="bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900">Start Oral Examination Round</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Subject</label>
+            <select id="viva-subject" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:bg-white focus:outline-none">
+              <option value="Operating Systems">Operating Systems</option>
+              <option value="Computer Networks">Computer Networks</option>
+              <option value="Database Management Systems">Database Management Systems</option>
+              <option value="Object Oriented Programming">Object Oriented Programming</option>
+              <option value="Software Engineering">Software Engineering</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Focus Topic</label>
+            <input id="viva-topic" type="text" value="Process Management & Deadlocks" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:bg-white focus:outline-none" />
+          </div>
+        </div>
+
+        <button id="btn-start-viva" onclick="startVivaSession()" class="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-rose-600/20 flex items-center justify-center gap-2">
+          <i data-lucide="mic" class="w-4 h-4"></i>
+          <span>Enter Viva Room & Ask Examiner</span>
+        </button>
+      </div>
+
+      <!-- Active Viva Question & Answer Card -->
+      <div id="viva-active-card" class="hidden bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm">
+        
+        <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div>
+            <span class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg text-xs font-bold uppercase tracking-wider">
+              Oral Viva Round
+            </span>
+            <span id="viva-active-subject" class="text-xs font-semibold text-slate-500 ml-2">Operating Systems</span>
+          </div>
+          <button onclick="resetVivaSession()" class="text-xs font-semibold text-slate-500 hover:text-slate-800">
+            End Viva
+          </button>
+        </div>
+
+        <!-- Question Display with TTS Audio Button -->
+        <div class="p-6 bg-rose-50/50 rounded-2xl border border-rose-100 space-y-3">
+          <div class="flex justify-between items-center">
+            <h4 class="text-xs font-bold uppercase text-rose-700 flex items-center gap-1.5">
+              <i data-lucide="bot" class="w-4 h-4"></i> AI Examiner Question:
+            </h4>
+            <button onclick="speakVivaQuestion()" class="px-3 py-1.5 bg-white hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold border border-rose-200 flex items-center gap-1.5 transition shadow-xs">
+              <i data-lucide="volume-2" class="w-4 h-4"></i> Listen Aloud
+            </button>
+          </div>
+          <p id="viva-question-text" class="text-base font-semibold text-slate-900 leading-relaxed"></p>
+        </div>
+
+        <!-- Oral Answer Input with Voice Recognition Button -->
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-600">Your Oral Answer</label>
+            <button id="btn-toggle-mic" onclick="toggleVoiceTyping()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 flex items-center gap-1.5 transition">
+              <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
+              <span id="mic-status-text">Speak with Mic</span>
+            </button>
+          </div>
+
+          <textarea id="viva-answer-input" rows="4" placeholder="Speak into your microphone or type your oral answer here..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:bg-white focus:outline-none placeholder-slate-400"></textarea>
+        </div>
+
+        <!-- Submit Oral Answer Button -->
+        <button id="btn-submit-viva" onclick="submitVivaAnswer()" class="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-rose-600/20 flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Submit Oral Answer to Examiner</span>
+        </button>
+
+        <!-- Examiner Evaluation Card -->
+        <div id="viva-evaluation-card" class="hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 animate-fade-in">
+          
+          <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+            <div class="flex items-center gap-3">
+              <i data-lucide="award" class="w-7 h-7 text-rose-600"></i>
+              <div>
+                <h4 class="font-bold text-slate-900 text-base">Examiner Verdict</h4>
+                <p class="text-xs text-slate-500">Evaluated on conceptual clarity & technical accuracy</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span id="viva-eval-score" class="text-2xl font-black text-rose-600">8</span>
+              <span class="text-xs text-slate-400">/10</span>
+            </div>
+          </div>
+
+          <div>
+            <span id="viva-eval-verdict" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              Satisfactory
+            </span>
+          </div>
+
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between items-center">
+              <h5 class="text-xs font-bold uppercase text-slate-500">Examiner Oral Feedback</h5>
+              <button onclick="speakVivaFeedback()" class="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1">
+                <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Play Voice
+              </button>
+            </div>
+            <p id="viva-eval-feedback" class="text-sm text-slate-800 leading-relaxed"></p>
+          </div>
+
+          <!-- Follow-up Question -->
+          <div id="viva-followup-box" class="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-2">
+            <h5 class="text-xs font-bold uppercase text-amber-700">Follow-up Viva Question</h5>
+            <p id="viva-followup-text" class="text-xs text-slate-800 font-medium"></p>
+            <button onclick="acceptFollowUpQuestion()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+              <span>Answer This Question</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <button onclick="resetVivaSession()" class="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition border border-slate-200">
+            Start Another Viva Round
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4">
+      <p class="font-medium">AI Virtual Learning Platform • BCA Final Year Project</p>
+      <p class="text-[11px] text-slate-400 mt-1">Built with pure HTML5, CSS3, JavaScript, Node.js, Express, MongoDB & Google Gemini AI</p>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

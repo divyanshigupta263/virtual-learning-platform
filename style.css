@@ -1,0 +1,114 @@
+/* Custom styling for the Virtual Learning Platform (Pure CSS) */
+
+/* Active & Inactive Navigation Tabs */
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-bottom-width: 2px;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  background: transparent;
+  outline: none;
+}
+
+.active-tab {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  background-color: #f5f3ff;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.inactive-tab {
+  border-color: transparent;
+  color: #64748b;
+}
+
+.inactive-tab:hover {
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+/* Option Button Styling for Mock Test */
+.quiz-option-btn {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.8125rem;
+  text-align: left;
+  transition: all 0.15s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.quiz-option-btn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.quiz-option-btn.selected {
+  background-color: #f5f3ff;
+  border-color: #8b5cf6;
+  color: #5b21b6;
+  font-weight: 600;
+  box-shadow: 0 1px 2px 0 rgba(139, 92, 246, 0.1);
+}
+
+.quiz-option-btn.correct {
+  background-color: #f0fdf4 !important;
+  border-color: #22c55e !important;
+  color: #14532d !important;
+  font-weight: 600 !important;
+}
+
+.quiz-option-btn.wrong {
+  background-color: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #7f1d1d !important;
+}
+
+/* Smooth Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* Custom Scrollbar for Drawer/History */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
