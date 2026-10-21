@@ -268,6 +268,8 @@ let interviewQuestions = [];
 let interviewCurrentIndex = 0;
 let interviewTopic = '';
 let isInterviewHistoryOpen = false;
+let interviewCandidateAnswers = {};
+let interviewEvaluations = {};
 
 // Start Interview Simulation (Online AI + Automatic Offline Question Bank)
 async function startInterviewSession() {
@@ -282,6 +284,9 @@ async function startInterviewSession() {
 
   startBtn.disabled = true;
   startBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Generating Questions with Gemini AI...`;
+
+  interviewCandidateAnswers = {};
+  interviewEvaluations = {};
 
   try {
     const res = await fetch(`${API_BASE}/api/interview/generate`, {
@@ -316,17 +321,129 @@ async function startInterviewSession() {
   displayCurrentInterviewQuestion();
 }
 
-// Display Question at Current Index
+// Render navigation pills for Interview Questions (e.g. Q1, Q2, Q3)
+function renderInterviewNavPills() {
+  const navContainer = document.getElementById('interview-question-nav');
+  if (!navContainer) return;
+  navContainer.innerHTML = '';
+
+  interviewQuestions.forEach((_, idx) => {
+    const isCurrent = idx === interviewCurrentIndex;
+    const isEvaluated = !!interviewEvaluations[idx];
+    const isDrafted = !!(interviewCandidateAnswers[idx] && interviewCandidateAnswers[idx].trim());
+
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.onclick = () => jumpToInterviewQuestion(idx);
+
+    if (isCurrent) {
+      pill.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-xs transition';
+    } else if (isEvaluated) {
+      pill.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 transition';
+    } else if (isDrafted) {
+      pill.className = 'px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 transition';
+    } else {
+      pill.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition';
+    }
+
+    pill.innerHTML = `Q${idx + 1}${isEvaluated ? ' <span class="text-xs">✓</span>' : ''}`;
+    navContainer.appendChild(pill);
+  });
+}
+
+// Display Question at Current Index with full restoration
 function displayCurrentInterviewQuestion() {
+  if (!interviewQuestions || interviewQuestions.length === 0) return;
+
   document.getElementById('interview-progress-badge').innerText = `Question ${interviewCurrentIndex + 1} of ${interviewQuestions.length}`;
   document.getElementById('interview-active-topic').innerText = interviewTopic;
   document.getElementById('interview-question-text').innerText = interviewQuestions[interviewCurrentIndex];
 
-  // Clear answer box & hide previous evaluation
-  document.getElementById('interview-answer-input').value = '';
-  document.getElementById('interview-answer-input').disabled = false;
-  document.getElementById('btn-submit-answer').classList.remove('hidden');
-  document.getElementById('interview-evaluation-card').classList.add('hidden');
+  renderInterviewNavPills();
+
+  const answerInput = document.getElementById('interview-answer-input');
+  const actionButtons = document.getElementById('interview-action-buttons');
+  const submitBtn = document.getElementById('btn-submit-answer');
+  const skipBtn = document.getElementById('btn-skip-interview');
+  const evalCard = document.getElementById('interview-evaluation-card');
+
+  const currentEval = interviewEvaluations[interviewCurrentIndex];
+
+  if (currentEval) {
+    // Already evaluated: show saved answer, lock textarea, display evaluation
+    answerInput.value = interviewCandidateAnswers[interviewCurrentIndex] || '';
+    answerInput.disabled = true;
+    if (actionButtons) actionButtons.classList.add('hidden');
+    renderInterviewEvaluation(currentEval, false);
+  } else {
+    // Un-evaluated: restore draft if any, enable textarea, show submit and next buttons
+    answerInput.value = interviewCandidateAnswers[interviewCurrentIndex] || '';
+    answerInput.disabled = false;
+    if (actionButtons) actionButtons.classList.remove('hidden');
+    if (submitBtn) {
+      submitBtn.classList.remove('hidden');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline mr-1"></i> Submit This Question Answer`;
+    }
+    if (skipBtn) {
+      if (interviewCurrentIndex + 1 < interviewQuestions.length) {
+        skipBtn.innerHTML = `<span>Next Question</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+      } else {
+        skipBtn.innerHTML = `<span>First Question</span> <i data-lucide="rotate-ccw" class="w-4 h-4"></i>`;
+      }
+    }
+    if (evalCard) evalCard.classList.add('hidden');
+  }
+
+  refreshIcons();
+}
+
+// Jump directly to an interview question
+function jumpToInterviewQuestion(idx) {
+  if (idx < 0 || idx >= interviewQuestions.length) return;
+  const answerInput = document.getElementById('interview-answer-input');
+  if (answerInput && !interviewEvaluations[interviewCurrentIndex]) {
+    interviewCandidateAnswers[interviewCurrentIndex] = answerInput.value;
+  }
+  interviewCurrentIndex = idx;
+  displayCurrentInterviewQuestion();
+}
+
+// Skip or navigate to next interview question without evaluating
+function skipInterviewQuestion() {
+  const answerInput = document.getElementById('interview-answer-input');
+  if (answerInput && !interviewEvaluations[interviewCurrentIndex]) {
+    interviewCandidateAnswers[interviewCurrentIndex] = answerInput.value;
+  }
+  if (interviewCurrentIndex + 1 < interviewQuestions.length) {
+    interviewCurrentIndex++;
+  } else {
+    interviewCurrentIndex = 0;
+  }
+  displayCurrentInterviewQuestion();
+}
+
+// Re-attempt / Edit an evaluated answer
+function editInterviewAnswer() {
+  delete interviewEvaluations[interviewCurrentIndex];
+  const evalCard = document.getElementById('interview-evaluation-card');
+  if (evalCard) evalCard.classList.add('hidden');
+
+  const answerInput = document.getElementById('interview-answer-input');
+  answerInput.disabled = false;
+  answerInput.focus();
+
+  const actionButtons = document.getElementById('interview-action-buttons');
+  if (actionButtons) actionButtons.classList.remove('hidden');
+
+  const submitBtn = document.getElementById('btn-submit-answer');
+  if (submitBtn) {
+    submitBtn.classList.remove('hidden');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline mr-1"></i> Re-submit This Answer`;
+  }
+
+  renderInterviewNavPills();
   refreshIcons();
 }
 
@@ -340,6 +457,8 @@ async function submitInterviewAnswer() {
     alert('Please type your answer before submitting.');
     return;
   }
+
+  interviewCandidateAnswers[interviewCurrentIndex] = answer;
 
   submitBtn.disabled = true;
   submitBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> AI is Evaluating Your Answer...`;
@@ -357,31 +476,35 @@ async function submitInterviewAnswer() {
     const data = await res.json();
 
     if (data.success && data.evaluation) {
-      renderInterviewEvaluation(data.evaluation);
+      interviewEvaluations[interviewCurrentIndex] = data.evaluation;
+      renderInterviewEvaluation(data.evaluation, true);
+      renderInterviewNavPills();
       return;
     }
   } catch (err) {
     console.warn('Backend evaluation notice, using offline evaluator:', err.message);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline mr-1"></i> Submit Answer for AI Evaluation`;
+    submitBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline mr-1"></i> Submit This Question Answer`;
     refreshIcons();
   }
 
   // Graceful offline evaluation
   const offlineEval = evaluateOfflineInterview(interviewTopic, interviewQuestions[interviewCurrentIndex], answer);
-  renderInterviewEvaluation(offlineEval);
+  interviewEvaluations[interviewCurrentIndex] = offlineEval;
+  renderInterviewEvaluation(offlineEval, true);
+  renderInterviewNavPills();
 }
 
 // Render Evaluation Score & Feedback
-function renderInterviewEvaluation(evaluation) {
+function renderInterviewEvaluation(evaluation, shouldScroll = true) {
   const evalCard = document.getElementById('interview-evaluation-card');
-  const submitBtn = document.getElementById('btn-submit-answer');
+  const actionButtons = document.getElementById('interview-action-buttons');
   const answerInput = document.getElementById('interview-answer-input');
 
-  // Lock answer input
+  // Lock answer input and hide normal submission button
   answerInput.disabled = true;
-  submitBtn.classList.add('hidden');
+  if (actionButtons) actionButtons.classList.add('hidden');
 
   // Score (Strictly out of 10)
   const numScore = Number(evaluation.score);
@@ -414,20 +537,26 @@ function renderInterviewEvaluation(evaluation) {
     });
   } else {
     const li = document.createElement('li');
-    li.innerText = 'No major points missed!';
+    li.innerText = 'No major technical points missed!';
     missingList.appendChild(li);
   }
 
   // Update Next Button text
   const nextBtn = document.getElementById('btn-next-question');
+  const allEvaluated = interviewQuestions.every((_, idx) => !!interviewEvaluations[idx]);
+
   if (interviewCurrentIndex + 1 < interviewQuestions.length) {
     nextBtn.innerHTML = `<span>Next Question (${interviewCurrentIndex + 2}/${interviewQuestions.length})</span> <i data-lucide="arrow-right" class="w-4 h-4 inline"></i>`;
+  } else if (!allEvaluated) {
+    nextBtn.innerHTML = `<span>Review Unfinished Questions</span> <i data-lucide="rotate-ccw" class="w-4 h-4 inline"></i>`;
   } else {
     nextBtn.innerHTML = `<span>Finish Session</span> <i data-lucide="check-circle-2" class="w-4 h-4 inline"></i>`;
   }
 
   evalCard.classList.remove('hidden');
-  evalCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (shouldScroll) {
+    evalCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
   refreshIcons();
 }
 
@@ -437,8 +566,20 @@ function nextInterviewQuestion() {
     interviewCurrentIndex++;
     displayCurrentInterviewQuestion();
   } else {
-    alert('Congratulations! You completed this interview simulation session.');
-    resetInterviewSession();
+    const allEvaluated = interviewQuestions.every((_, idx) => !!interviewEvaluations[idx]);
+    if (allEvaluated) {
+      alert('Congratulations! You completed all questions in this interview simulation.');
+      resetInterviewSession();
+    } else {
+      const nextUnfinished = interviewQuestions.findIndex((_, idx) => !interviewEvaluations[idx]);
+      if (nextUnfinished !== -1) {
+        interviewCurrentIndex = nextUnfinished;
+        displayCurrentInterviewQuestion();
+      } else {
+        alert('Congratulations! You completed this interview simulation session.');
+        resetInterviewSession();
+      }
+    }
   }
 }
 
@@ -448,6 +589,8 @@ function resetInterviewSession() {
   document.getElementById('interview-active-card').classList.add('hidden');
   interviewQuestions = [];
   interviewCurrentIndex = 0;
+  interviewCandidateAnswers = {};
+  interviewEvaluations = {};
   refreshIcons();
 }
 
@@ -528,6 +671,7 @@ async function clearInterviewHistoryData() {
 // =========================================================================
 let currentActiveTest = null;
 let currentTestAnswers = {};
+let activeTestQuestionIndex = 0;
 let testTimerInterval = null;
 let testSecondsRemaining = 0;
 let isTestHistoryOpen = false;
@@ -649,32 +793,98 @@ async function startTest(testId) {
 function launchTestRunner(test) {
   currentActiveTest = test;
   currentTestAnswers = {};
+  activeTestQuestionIndex = 0;
 
   // Switch views
   document.getElementById('test-catalog-container').classList.add('hidden');
   document.getElementById('test-runner-container').classList.remove('hidden');
   document.getElementById('test-result-summary').classList.add('hidden');
+  document.getElementById('runner-single-question-box').classList.remove('hidden');
   document.getElementById('runner-action-bar').classList.remove('hidden');
 
   // Set titles
   document.getElementById('runner-test-title').innerText = test.title;
-  document.getElementById('runner-test-subject').innerText = `${test.subject} • ${test.questions.length} Questions (Marks out of 10)`;
+  document.getElementById('runner-test-subject').innerText = `${test.subject || 'Assessment'} • ${test.questions.length} Questions (Marks out of 10)`;
 
-  // Render Questions with clear A, B, C, D Option Badges
-  const questionsList = document.getElementById('runner-questions-list');
-  questionsList.innerHTML = '';
+  // Render first question
+  renderCurrentTestQuestion();
 
+  // Start Countdown Timer
+  startTestTimer(test.durationMinutes || 10);
+  refreshIcons();
+}
+
+// Render Single Active Question with stepper & navigation pills
+function renderCurrentTestQuestion() {
+  if (!currentActiveTest || !currentActiveTest.questions || currentActiveTest.questions.length === 0) return;
+
+  const questions = currentActiveTest.questions;
+  const total = questions.length;
+  if (activeTestQuestionIndex >= total) activeTestQuestionIndex = total - 1;
+  if (activeTestQuestionIndex < 0) activeTestQuestionIndex = 0;
+
+  const q = questions[activeTestQuestionIndex];
   const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-  test.questions.forEach((q, qIdx) => {
-    const qBox = document.createElement('div');
-    qBox.id = `qbox-${q.id}`;
-    qBox.className = 'p-5 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3';
+  // 1. Render Question Navigation Pills (e.g. Q1, Q2, Q3)
+  const navContainer = document.getElementById('test-question-nav-pills');
+  if (navContainer) {
+    navContainer.innerHTML = '';
+    questions.forEach((item, idx) => {
+      const isAnswered = currentTestAnswers[item.id] !== undefined && currentTestAnswers[item.id] !== null;
+      const isActive = idx === activeTestQuestionIndex;
 
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.onclick = () => jumpToTestQuestion(idx);
+
+      if (isActive) {
+        pill.className = 'px-3 py-1.5 rounded-xl font-bold text-xs bg-violet-600 text-white shadow-sm flex items-center gap-1 transition';
+      } else if (isAnswered) {
+        pill.className = 'px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 flex items-center gap-1 transition';
+      } else {
+        pill.className = 'px-3 py-1.5 rounded-xl font-semibold text-xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 flex items-center gap-1 transition';
+      }
+      pill.innerHTML = `Q${idx + 1}${isAnswered ? ' <span class="text-xs font-black text-emerald-600">✓</span>' : ''}`;
+      navContainer.appendChild(pill);
+    });
+  }
+
+  // 2. Render Answered Progress Counter
+  const answeredCount = Object.keys(currentTestAnswers).length;
+  const countBadge = document.getElementById('runner-answered-count');
+  if (countBadge) {
+    countBadge.innerText = `${answeredCount} of ${total} Questions Answered`;
+    if (answeredCount === total) {
+      countBadge.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200';
+    } else {
+      countBadge.className = 'text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-200';
+    }
+  }
+
+  // 3. Update Stepper Buttons (Prev / Next)
+  const btnPrev = document.getElementById('btn-prev-test-q');
+  if (btnPrev) {
+    btnPrev.disabled = activeTestQuestionIndex === 0;
+  }
+  const btnNext = document.getElementById('btn-next-test-q');
+  if (btnNext) {
+    if (activeTestQuestionIndex === total - 1) {
+      btnNext.innerHTML = `<span>Review First Question</span> <i data-lucide="rotate-ccw" class="w-4 h-4"></i>`;
+    } else {
+      btnNext.innerHTML = `<span>Next Question</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+    }
+  }
+
+  // 4. Render Current Single Question & Options
+  const qBox = document.getElementById('runner-single-question-box');
+  if (qBox) {
     let optionsHtml = '';
+    const selectedOption = currentTestAnswers[q.id];
+
     q.options.forEach((opt, optIdx) => {
       const letter = LETTERS[optIdx] || (optIdx + 1);
-      // Safe escaped text so symbols or tags never break the layout
+      const isSelected = selectedOption === optIdx;
       const safeOptText = String(opt)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -683,91 +893,71 @@ function launchTestRunner(test) {
         .replace(/'/g, '&#39;');
 
       optionsHtml += `
-        <button type="button" id="opt-${q.id}-${optIdx}" onclick="selectQuizOption('${q.id}', ${optIdx})" class="quiz-option-btn group">
+        <button type="button" onclick="selectQuizOption('${q.id}', ${optIdx})" class="quiz-option-btn group ${isSelected ? 'selected' : ''}">
           <div class="flex items-center gap-3">
-            <span id="badge-${q.id}-${optIdx}" class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 transition group-hover:bg-violet-100 group-hover:text-violet-700">
+            <span class="w-7 h-7 rounded-lg ${isSelected ? 'bg-violet-600 text-white font-bold' : 'bg-slate-100 text-slate-700 font-bold group-hover:bg-violet-100 group-hover:text-violet-700'} text-xs flex items-center justify-center border border-slate-200 transition shadow-xs">
               ${letter}
             </span>
             <span class="text-slate-800 text-sm font-medium leading-relaxed">${safeOptText}</span>
           </div>
-          <span id="opt-icon-${q.id}-${optIdx}" class="flex items-center"></span>
+          <span class="flex items-center">
+            ${isSelected ? '<span class="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">✓</span>' : ''}
+          </span>
         </button>
       `;
     });
 
     qBox.innerHTML = `
-      <div class="flex items-start justify-between gap-3">
-        <p class="font-bold text-slate-900 text-sm leading-snug">
-          <span class="text-violet-600 mr-1.5 font-extrabold">Q${qIdx + 1}.</span> ${q.question}
+      <div class="p-6 bg-slate-50/90 rounded-2xl border border-slate-200 space-y-4 animate-fade-in">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <span class="px-3 py-1 bg-violet-100 text-violet-800 rounded-lg text-xs font-bold uppercase tracking-wider">
+            Question ${activeTestQuestionIndex + 1} of ${total}
+          </span>
+          <span class="text-xs font-semibold text-slate-500">Pick an answer (you can change it anytime)</span>
+        </div>
+        <p class="font-bold text-slate-900 text-base leading-relaxed">
+          ${q.question}
         </p>
+        <div class="space-y-3 pt-1">
+          ${optionsHtml}
+        </div>
       </div>
-      <div class="space-y-2.5 pt-1">
-        ${optionsHtml}
-      </div>
-      <div id="explanation-${q.id}" class="hidden mt-3 p-3.5 bg-white rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed shadow-xs"></div>
     `;
-    questionsList.appendChild(qBox);
-  });
+  }
 
-  updateTestProgressDisplay();
-
-  // Start Countdown Timer
-  startTestTimer(test.durationMinutes || 10);
   refreshIcons();
 }
 
-// Option Click Handler with vivid highlights and badges
+// Option Click Handler - Saves answer without premature evaluation
 function selectQuizOption(questionId, optionIndex) {
+  // Save answer in answers map
   currentTestAnswers[questionId] = optionIndex;
-
-  const qBox = document.getElementById(`qbox-${questionId}`);
-  if (!qBox) return;
-
-  // Reset peer buttons of same question
-  const buttons = qBox.querySelectorAll('.quiz-option-btn');
-  buttons.forEach((btn, idx) => {
-    btn.classList.remove('selected');
-    const badge = document.getElementById(`badge-${questionId}-${idx}`);
-    if (badge) {
-      badge.className = 'w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 transition group-hover:bg-violet-100 group-hover:text-violet-700';
-    }
-    const icon = document.getElementById(`opt-icon-${questionId}-${idx}`);
-    if (icon) icon.innerHTML = '';
-  });
-
-  // Mark clicked button as chosen
-  const chosenBtn = document.getElementById(`opt-${questionId}-${optionIndex}`);
-  if (chosenBtn) {
-    chosenBtn.classList.add('selected');
-  }
-
-  const chosenBadge = document.getElementById(`badge-${questionId}-${optionIndex}`);
-  if (chosenBadge) {
-    chosenBadge.className = 'w-7 h-7 rounded-lg bg-violet-600 text-white font-bold text-xs flex items-center justify-center shadow-xs';
-  }
-
-  const chosenIcon = document.getElementById(`opt-icon-${questionId}-${optionIndex}`);
-  if (chosenIcon) {
-    chosenIcon.innerHTML = `<span class="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-xs">✓</span>`;
-  }
-
-  updateTestProgressDisplay();
-  refreshIcons();
+  // Re-render single question box & pills to reflect selection
+  renderCurrentTestQuestion();
 }
 
-// Update questions answered counter
-function updateTestProgressDisplay() {
-  if (!currentActiveTest) return;
+// Stepper Prev / Next question navigation
+function navigateTestQuestion(delta) {
+  if (!currentActiveTest || !currentActiveTest.questions) return;
   const total = currentActiveTest.questions.length;
-  const answered = Object.keys(currentTestAnswers).length;
-  const countBadge = document.getElementById('runner-answered-count');
-  if (countBadge) {
-    countBadge.innerText = `${answered} of ${total} Questions Answered`;
-    if (answered === total) {
-      countBadge.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200';
-    } else {
-      countBadge.className = 'text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-200';
+  if (delta === 1 && activeTestQuestionIndex === total - 1) {
+    activeTestQuestionIndex = 0; // loop to first question for review
+  } else {
+    const target = activeTestQuestionIndex + delta;
+    if (target >= 0 && target < total) {
+      activeTestQuestionIndex = target;
     }
+  }
+  renderCurrentTestQuestion();
+}
+
+// Jump directly to any question by clicking its pill
+function jumpToTestQuestion(idx) {
+  if (!currentActiveTest || !currentActiveTest.questions) return;
+  const total = currentActiveTest.questions.length;
+  if (idx >= 0 && idx < total) {
+    activeTestQuestionIndex = idx;
+    renderCurrentTestQuestion();
   }
 }
 
@@ -904,6 +1094,7 @@ async function submitTestAnswers() {
 // Render Results & Scorecard strictly out of 10
 function renderTestResults(data) {
   document.getElementById('runner-action-bar').classList.add('hidden');
+  document.getElementById('runner-single-question-box').classList.add('hidden');
   const summaryCard = document.getElementById('test-result-summary');
 
   // Strictly calculate and display score out of 10
@@ -928,45 +1119,66 @@ function renderTestResults(data) {
     passBadge.className = 'px-4 py-1.5 rounded-full font-bold text-xs bg-rose-100 text-rose-800 border border-rose-300';
   }
 
-  // Highlight Options (Emerald for correct, Rose for student wrong choice) and show explanation
-  data.breakdown.forEach((item) => {
-    const correctBtn = document.getElementById(`opt-${item.questionId}-${item.correctOptionIndex}`);
-    if (correctBtn) {
-      correctBtn.classList.add('correct');
-      const correctBadge = document.getElementById(`badge-${item.questionId}-${item.correctOptionIndex}`);
-      if (correctBadge) {
-        correctBadge.className = 'w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center';
-      }
-      const iconSpan = document.getElementById(`opt-icon-${item.questionId}-${item.correctOptionIndex}`);
-      if (iconSpan) iconSpan.innerHTML = `<span class="px-2 py-0.5 rounded bg-emerald-200 text-emerald-900 font-bold text-xs">Correct ✓</span>`;
-    }
+  // Populate detailed question-by-question review in #runner-review-items
+  const reviewContainer = document.getElementById('runner-review-items');
+  if (reviewContainer && data.breakdown) {
+    reviewContainer.innerHTML = '';
+    const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-    if (!item.isCorrect && item.selectedOptionIndex !== null) {
-      const wrongBtn = document.getElementById(`opt-${item.questionId}-${item.selectedOptionIndex}`);
-      if (wrongBtn) {
-        wrongBtn.classList.add('wrong');
-        const wrongBadge = document.getElementById(`badge-${item.questionId}-${item.selectedOptionIndex}`);
-        if (wrongBadge) {
-          wrongBadge.className = 'w-7 h-7 rounded-lg bg-rose-600 text-white font-bold text-xs flex items-center justify-center';
+    data.breakdown.forEach((item, idx) => {
+      const reviewBox = document.createElement('div');
+      reviewBox.className = 'p-5 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs';
+
+      let optionsHtml = '';
+      item.options.forEach((opt, optIdx) => {
+        const letter = LETTERS[optIdx] || (optIdx + 1);
+        const isCorrect = optIdx === item.correctOptionIndex;
+        const isStudentChoice = optIdx === item.selectedOptionIndex;
+
+        let optStyle = 'border-slate-200 bg-slate-50 text-slate-700';
+        let badgeStyle = 'bg-slate-200 text-slate-700';
+        let tagHtml = '';
+
+        if (isCorrect) {
+          optStyle = 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold ring-1 ring-emerald-400';
+          badgeStyle = 'bg-emerald-600 text-white';
+          tagHtml = '<span class="px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-xs font-bold">Correct Answer ✓</span>';
+        } else if (isStudentChoice && !isCorrect) {
+          optStyle = 'border-rose-400 bg-rose-50 text-rose-900 font-semibold ring-1 ring-rose-300';
+          badgeStyle = 'bg-rose-600 text-white';
+          tagHtml = '<span class="px-2.5 py-0.5 rounded-full bg-rose-200 text-rose-900 text-xs font-bold">Your Choice ✗</span>';
         }
-        const iconSpan = document.getElementById(`opt-icon-${item.questionId}-${item.selectedOptionIndex}`);
-        if (iconSpan) iconSpan.innerHTML = `<span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold text-xs">Your Choice ✗</span>`;
-      }
-    }
 
-    // Explanation
-    const expBox = document.getElementById(`explanation-${item.questionId}`);
-    if (expBox) {
-      expBox.innerHTML = `<strong>Explanation:</strong> ${item.explanation}`;
-      expBox.classList.remove('hidden');
-    }
-  });
+        optionsHtml += `
+          <div class="flex items-center justify-between p-3 rounded-xl border ${optStyle} text-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-md ${badgeStyle} text-xs font-bold flex items-center justify-center">${letter}</span>
+              <span>${opt}</span>
+            </div>
+            ${tagHtml}
+          </div>
+        `;
+      });
 
-  // Disable all option buttons after test completes
-  document.querySelectorAll('.quiz-option-btn').forEach((btn) => {
-    btn.disabled = true;
-    btn.style.cursor = 'default';
-  });
+      reviewBox.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <h5 class="font-bold text-slate-900 text-sm">
+            <span class="text-violet-600 font-black mr-1">Q${idx + 1}.</span> ${item.question}
+          </h5>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${item.isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+            ${item.isCorrect ? 'Correct (+1)' : 'Incorrect (0)'}
+          </span>
+        </div>
+        <div class="space-y-2 pt-1">
+          ${optionsHtml}
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
+          <strong class="text-slate-900">Explanation:</strong> ${item.explanation}
+        </div>
+      `;
+      reviewContainer.appendChild(reviewBox);
+    });
+  }
 
   summaryCard.classList.remove('hidden');
   summaryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -980,6 +1192,8 @@ function exitTestRunner() {
   document.getElementById('test-catalog-container').classList.remove('hidden');
   currentActiveTest = null;
   currentTestAnswers = {};
+  activeTestQuestionIndex = 0;
+  loadTestCatalog();
   refreshIcons();
 }
 

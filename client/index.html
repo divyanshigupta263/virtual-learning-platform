@@ -166,16 +166,23 @@
       <div id="interview-active-card" class="hidden bg-white border border-slate-200 p-8 rounded-2xl space-y-6 shadow-sm">
         
         <!-- Header & Progress -->
-        <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 p-4 rounded-xl border border-slate-200 gap-3">
           <div>
             <span id="interview-progress-badge" class="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold uppercase tracking-wider">
               Question 1 of 3
             </span>
             <span id="interview-active-topic" class="text-xs font-semibold text-slate-500 ml-2">React.js</span>
           </div>
-          <button onclick="resetInterviewSession()" class="text-xs font-semibold text-slate-500 hover:text-slate-800">
-            End Session
-          </button>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 font-medium">Jump to:</span>
+            <div id="interview-question-nav" class="flex gap-1.5">
+              <!-- Dynamically populated e.g. [Q1] [Q2] [Q3] -->
+            </div>
+            <button onclick="resetInterviewSession()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 ml-2 pl-2 border-l border-slate-300">
+              End Session
+            </button>
+          </div>
         </div>
 
         <!-- Question Display Box -->
@@ -186,15 +193,24 @@
 
         <!-- Candidate Answer Box -->
         <div class="space-y-2">
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">Your Technical Answer</label>
+          <div class="flex justify-between items-center">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">Your Technical Answer</label>
+            <span class="text-[11px] text-slate-400">Type your answer or switch questions anytime</span>
+          </div>
           <textarea id="interview-answer-input" rows="5" placeholder="Explain your answer clearly and technically here..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none placeholder-slate-400"></textarea>
         </div>
 
-        <!-- Action Submit Button -->
-        <button id="btn-submit-answer" onclick="submitInterviewAnswer()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
-          <i data-lucide="send" class="w-4 h-4"></i>
-          <span>Submit Answer for AI Evaluation</span>
-        </button>
+        <!-- Action Submit & Navigation Buttons -->
+        <div id="interview-action-buttons" class="flex gap-3">
+          <button id="btn-submit-answer" onclick="submitInterviewAnswer()" class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Submit This Question Answer</span>
+          </button>
+          <button type="button" id="btn-skip-interview" onclick="skipInterviewQuestion()" class="px-5 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition border border-slate-200 flex items-center gap-1.5 whitespace-nowrap">
+            <span>Next Question</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
 
         <!-- Evaluation Results Display (Hidden until evaluation completes) -->
         <div id="interview-evaluation-card" class="hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-5 animate-fade-in">
@@ -240,11 +256,17 @@
             <p id="eval-suggestions" class="text-xs text-slate-700 leading-relaxed"></p>
           </div>
 
-          <!-- Next Question / Finish Button -->
-          <button id="btn-next-question" onclick="nextInterviewQuestion()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-md shadow-indigo-600/20">
-            <span>Next Question</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
+          <!-- Post-Evaluation Action Buttons -->
+          <div class="flex gap-3">
+            <button type="button" onclick="editInterviewAnswer()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition border border-slate-200 flex items-center justify-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+              <span>Re-attempt / Edit Answer</span>
+            </button>
+            <button id="btn-next-question" onclick="nextInterviewQuestion()" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md shadow-indigo-600/20">
+              <span>Next Question</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -348,32 +370,46 @@
           </div>
         </div>
 
-        <!-- Questions List Container -->
-        <div id="runner-questions-list" class="space-y-6">
-          <!-- Dynamically populated by app.js -->
+        <!-- Question Navigation Bar (1, 2, 3, 4...) -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Questions:</span>
+            <div id="test-question-nav-pills" class="flex flex-wrap gap-2">
+              <!-- Dynamically populated e.g. [1] [2] [3] [4] -->
+            </div>
+          </div>
+          <span id="runner-answered-count" class="text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-200 self-start sm:self-auto">
+            0 Questions Answered
+          </span>
         </div>
 
-        <!-- Action Buttons (Before Submission) -->
-        <div id="runner-action-bar" class="space-y-3 pt-2">
-          <div class="flex items-center justify-between px-1">
-            <span id="runner-answered-count" class="text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-200">
-              0 Questions Answered
-            </span>
-            <span class="text-xs text-slate-400">Click any option to select answer</span>
-          </div>
-          <div class="flex gap-4">
-            <button id="btn-submit-test" onclick="submitTestAnswers()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2">
-              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-              <span>Submit Test for Scoring</span>
+        <!-- Single Active Question Container -->
+        <div id="runner-single-question-box" class="space-y-4">
+          <!-- Dynamically populated with active question and A, B, C, D options -->
+        </div>
+
+        <!-- Stepper Controls (Prev, Next, Submit Test) -->
+        <div id="runner-action-bar" class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+          <button id="btn-prev-test-q" onclick="navigateTestQuestion(-1)" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition border border-slate-200 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>Previous Question</span>
+          </button>
+
+          <div class="flex items-center gap-3">
+            <button id="btn-next-test-q" onclick="navigateTestQuestion(1)" class="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs transition shadow-md shadow-violet-600/20 flex items-center gap-2">
+              <span>Next Question</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
-            <button onclick="exitTestRunner()" class="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold border border-slate-200 transition">
-              Exit
+
+            <button id="btn-submit-test" onclick="submitTestAnswers()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-emerald-600/20 flex items-center gap-2">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Submit Test for Evaluation</span>
             </button>
           </div>
         </div>
 
         <!-- Performance Summary Card (After Submission) -->
-        <div id="test-result-summary" class="hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 shadow-sm animate-fade-in">
+        <div id="test-result-summary" class="hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-5 shadow-sm animate-fade-in">
           <div class="flex justify-between items-center border-b border-slate-200 pb-3">
             <div class="flex items-center gap-3">
               <i data-lucide="award" class="w-7 h-7 text-amber-500"></i>
@@ -401,6 +437,14 @@
               <p class="text-xs text-slate-500 mb-1">Grade</p>
               <p id="test-stat-grade" class="text-2xl font-black text-amber-600">A</p>
             </div>
+          </div>
+
+          <!-- Review breakdown of all questions after test evaluation -->
+          <div class="space-y-3 pt-3 border-t border-slate-200">
+            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i> Full Question-by-Question Review & Explanations:
+            </h4>
+            <div id="runner-review-items" class="space-y-3"></div>
           </div>
 
           <button onclick="exitTestRunner()" class="w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition shadow-md shadow-violet-600/20">
