@@ -7,12 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure reliable SRV DNS resolution for MongoDB Atlas on Windows/local networks
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4']);
-} catch {
-  // Ignore if custom dns servers cannot be set
-}
+// Native MongoDB client and persistent fallback
 
 let db = null;
 let client = null;
