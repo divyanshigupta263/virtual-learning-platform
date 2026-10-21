@@ -1,0 +1,5 @@
+{
+  "task.allowAutomaticTasks": "on",
+  "liveServer.settings.port": 5500,
+  "liveServer.settings.root": "/"
+}
