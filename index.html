@@ -208,8 +208,8 @@
               </div>
             </div>
             <div class="text-right">
-              <span id="eval-score" class="text-2xl font-black text-indigo-700">85</span>
-              <span class="text-xs text-slate-400">/100</span>
+              <span id="eval-score" class="text-2xl font-black text-indigo-700">8.5</span>
+              <span class="text-xs text-slate-400">/10</span>
             </div>
           </div>
 
@@ -354,13 +354,22 @@
         </div>
 
         <!-- Action Buttons (Before Submission) -->
-        <div id="runner-action-bar" class="flex gap-4 pt-2">
-          <button id="btn-submit-test" onclick="submitTestAnswers()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-emerald-600/20">
-            Submit Test for Scoring
-          </button>
-          <button onclick="exitTestRunner()" class="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold border border-slate-200 transition">
-            Exit
-          </button>
+        <div id="runner-action-bar" class="space-y-3 pt-2">
+          <div class="flex items-center justify-between px-1">
+            <span id="runner-answered-count" class="text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-200">
+              0 Questions Answered
+            </span>
+            <span class="text-xs text-slate-400">Click any option to select answer</span>
+          </div>
+          <div class="flex gap-4">
+            <button id="btn-submit-test" onclick="submitTestAnswers()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Submit Test for Scoring</span>
+            </button>
+            <button onclick="exitTestRunner()" class="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold border border-slate-200 transition">
+              Exit
+            </button>
+          </div>
         </div>
 
         <!-- Performance Summary Card (After Submission) -->
@@ -370,7 +379,7 @@
               <i data-lucide="award" class="w-7 h-7 text-amber-500"></i>
               <div>
                 <h4 class="font-bold text-slate-900 text-lg">Performance Report</h4>
-                <p class="text-xs text-slate-500 font-medium">Auto-graded & saved to database</p>
+                <p class="text-xs text-slate-500 font-medium">Auto-graded & saved to database (Marks strictly out of 10)</p>
               </div>
             </div>
 
@@ -381,16 +390,16 @@
 
           <div class="grid grid-cols-3 gap-4 text-center">
             <div class="bg-white p-4 rounded-xl border border-slate-200">
-              <p class="text-xs text-slate-500 mb-1">Score</p>
-              <p id="test-stat-score" class="text-xl font-bold text-violet-700">4 / 4</p>
+              <p class="text-xs text-slate-500 mb-1">Final Marks</p>
+              <p id="test-stat-score" class="text-2xl font-black text-violet-700">10 / 10</p>
             </div>
             <div class="bg-white p-4 rounded-xl border border-slate-200">
-              <p class="text-xs text-slate-500 mb-1">Percentage</p>
-              <p id="test-stat-percentage" class="text-xl font-bold text-emerald-600">100%</p>
+              <p class="text-xs text-slate-500 mb-1">Questions Correct</p>
+              <p id="test-stat-correct" class="text-2xl font-black text-emerald-600">4 / 4</p>
             </div>
             <div class="bg-white p-4 rounded-xl border border-slate-200">
               <p class="text-xs text-slate-500 mb-1">Grade</p>
-              <p id="test-stat-grade" class="text-xl font-bold text-amber-600">A</p>
+              <p id="test-stat-grade" class="text-2xl font-black text-amber-600">A</p>
             </div>
           </div>
 

@@ -4,8 +4,8 @@ import { saveInterviewReport, getDB, getInterviewHistory, clearInterviewHistory 
 
 const router = express.Router();
 
-// Verified active and responsive models
-const MODEL_CANDIDATES = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
+// Verified active and responsive models in current Gemini API
+const MODEL_CANDIDATES = ['gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
 /**
  * Helper to generate content with fallback models
  */
@@ -127,7 +127,7 @@ Candidate Answer: "${answer}"
 
 Evaluate the candidate's answer and return a raw JSON object matching this structure exact format:
 {
-  "score": <number between 0 and 100>,
+  "score": <number between 1 and 10, e.g. 8.5 or 9>,
   "correctness": "<Fully Correct | Partially Correct | Incorrect>",
   "missingPoints": ["<missing point 1>", "<missing point 2>"],
   "feedback": "<concise constructive feedback>",
@@ -144,12 +144,17 @@ Only output valid JSON. Do not include markdown code block formatting.`;
       evaluation = JSON.parse(responseText.substring(jsonStart, jsonEnd));
     } catch {
       evaluation = {
-        score: 70,
+        score: 7.5,
         correctness: 'Partially Correct',
         missingPoints: ['Requires more detail'],
         feedback: responseText,
         improvementSuggestions: 'Review topic documentation'
       };
+    }
+
+    // Ensure score is scaled strictly out of 10
+    if (evaluation.score > 10) {
+      evaluation.score = Number((evaluation.score / 10).toFixed(1));
     }
 
     // Automatically save interview evaluation to MongoDB Atlas
@@ -171,10 +176,10 @@ Only output valid JSON. Do not include markdown code block formatting.`;
   } catch (error) {
     console.warn('Gemini evaluation notice (using automated evaluation fallback):', error.message);
     const words = (req.body.answer || '').trim().split(/\s+/).length;
-    const baseScore = Math.min(92, Math.max(60, words * 2 + 40));
+    const baseScore = Math.min(10, Math.max(5, Math.round(words / 5) + 5));
     const fallbackEval = {
       score: baseScore,
-      correctness: baseScore >= 80 ? 'Fully Correct' : 'Partially Correct',
+      correctness: baseScore >= 8 ? 'Fully Correct' : 'Partially Correct',
       feedback: 'Good technical attempt explaining key concepts. To achieve a top score in a real interview, include concrete architectural trade-offs.',
       missingPoints: ['Edge case handling', 'Production scalability details'],
       improvementSuggestions: 'Review official documentation and practice explaining implementation syntax step-by-step.'

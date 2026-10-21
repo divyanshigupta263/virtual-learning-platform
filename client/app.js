@@ -201,15 +201,17 @@ function renderInterviewEvaluation(evaluation) {
   answerInput.disabled = true;
   submitBtn.classList.add('hidden');
 
-  // Score
-  document.getElementById('eval-score').innerText = evaluation.score;
+  // Score (Strictly out of 10)
+  const numScore = Number(evaluation.score);
+  const scoreOutOf10 = numScore > 10 ? Number((numScore / 10).toFixed(1)) : numScore;
+  document.getElementById('eval-score').innerText = scoreOutOf10;
 
-  // Correctness badge
+  // Correctness badge (Thresholds based on 10)
   const correctnessBadge = document.getElementById('eval-correctness');
-  correctnessBadge.innerText = evaluation.correctness || 'Evaluated';
-  if (evaluation.score >= 80) {
+  correctnessBadge.innerText = evaluation.correctness || (scoreOutOf10 >= 8 ? 'Fully Correct' : scoreOutOf10 >= 5 ? 'Partially Correct' : 'Needs Practice');
+  if (scoreOutOf10 >= 8.0) {
     correctnessBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
-  } else if (evaluation.score >= 50) {
+  } else if (scoreOutOf10 >= 5.0) {
     correctnessBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300';
   } else {
     correctnessBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300';
@@ -243,6 +245,7 @@ function renderInterviewEvaluation(evaluation) {
   }
 
   evalCard.classList.remove('hidden');
+  evalCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   refreshIcons();
 }
 
@@ -291,8 +294,9 @@ async function toggleInterviewHistory() {
         const row = document.createElement('div');
         row.className = 'p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-sm';
         
-        const isViva = item.type === 'viva';
-        const displayScore = isViva ? `${item.score}/10` : `${item.score}/100`;
+        const rawScore = Number(item.score);
+        const scoreOutOf10 = rawScore > 10 ? Number((rawScore / 10).toFixed(1)) : rawScore;
+        const displayScore = `${scoreOutOf10}/10`;
 
         row.innerHTML = `
           <div>
@@ -445,57 +449,116 @@ function launchTestRunner(test) {
 
   // Set titles
   document.getElementById('runner-test-title').innerText = test.title;
-  document.getElementById('runner-test-subject').innerText = `${test.subject} • ${test.questions.length} Questions`;
+  document.getElementById('runner-test-subject').innerText = `${test.subject} • ${test.questions.length} Questions (Marks out of 10)`;
 
-  // Render Questions
+  // Render Questions with clear A, B, C, D Option Badges
   const questionsList = document.getElementById('runner-questions-list');
   questionsList.innerHTML = '';
+
+  const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
   test.questions.forEach((q, qIdx) => {
     const qBox = document.createElement('div');
     qBox.id = `qbox-${q.id}`;
-    qBox.className = 'p-5 bg-slate-50/70 rounded-xl border border-slate-200 space-y-3';
+    qBox.className = 'p-5 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3';
 
     let optionsHtml = '';
     q.options.forEach((opt, optIdx) => {
+      const letter = LETTERS[optIdx] || (optIdx + 1);
+      // Safe escaped text so symbols or tags never break the layout
+      const safeOptText = String(opt)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
       optionsHtml += `
-        <button id="opt-${q.id}-${optIdx}" onclick="selectQuizOption('${q.id}', ${optIdx})" class="quiz-option-btn">
-          <span>${opt}</span>
-          <span id="opt-icon-${q.id}-${optIdx}"></span>
+        <button type="button" id="opt-${q.id}-${optIdx}" onclick="selectQuizOption('${q.id}', ${optIdx})" class="quiz-option-btn group">
+          <div class="flex items-center gap-3">
+            <span id="badge-${q.id}-${optIdx}" class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 transition group-hover:bg-violet-100 group-hover:text-violet-700">
+              ${letter}
+            </span>
+            <span class="text-slate-800 text-sm font-medium leading-relaxed">${safeOptText}</span>
+          </div>
+          <span id="opt-icon-${q.id}-${optIdx}" class="flex items-center"></span>
         </button>
       `;
     });
 
     qBox.innerHTML = `
-      <p class="font-semibold text-slate-900 text-sm">
-        ${qIdx + 1}. ${q.question}
-      </p>
-      <div class="space-y-2">
+      <div class="flex items-start justify-between gap-3">
+        <p class="font-bold text-slate-900 text-sm leading-snug">
+          <span class="text-violet-600 mr-1.5 font-extrabold">Q${qIdx + 1}.</span> ${q.question}
+        </p>
+      </div>
+      <div class="space-y-2.5 pt-1">
         ${optionsHtml}
       </div>
-      <div id="explanation-${q.id}" class="hidden mt-3 p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-600"></div>
+      <div id="explanation-${q.id}" class="hidden mt-3 p-3.5 bg-white rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed shadow-xs"></div>
     `;
     questionsList.appendChild(qBox);
   });
+
+  updateTestProgressDisplay();
 
   // Start Countdown Timer
   startTestTimer(test.durationMinutes || 10);
   refreshIcons();
 }
 
-// Option Click Handler
+// Option Click Handler with vivid highlights and badges
 function selectQuizOption(questionId, optionIndex) {
   currentTestAnswers[questionId] = optionIndex;
 
-  // Clear 'selected' from peer buttons of same question
   const qBox = document.getElementById(`qbox-${questionId}`);
-  const buttons = qBox.querySelectorAll('.quiz-option-btn');
-  buttons.forEach((btn) => btn.classList.remove('selected'));
+  if (!qBox) return;
 
-  // Mark clicked button as selected
+  // Reset peer buttons of same question
+  const buttons = qBox.querySelectorAll('.quiz-option-btn');
+  buttons.forEach((btn, idx) => {
+    btn.classList.remove('selected');
+    const badge = document.getElementById(`badge-${questionId}-${idx}`);
+    if (badge) {
+      badge.className = 'w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 transition group-hover:bg-violet-100 group-hover:text-violet-700';
+    }
+    const icon = document.getElementById(`opt-icon-${questionId}-${idx}`);
+    if (icon) icon.innerHTML = '';
+  });
+
+  // Mark clicked button as chosen
   const chosenBtn = document.getElementById(`opt-${questionId}-${optionIndex}`);
   if (chosenBtn) {
     chosenBtn.classList.add('selected');
+  }
+
+  const chosenBadge = document.getElementById(`badge-${questionId}-${optionIndex}`);
+  if (chosenBadge) {
+    chosenBadge.className = 'w-7 h-7 rounded-lg bg-violet-600 text-white font-bold text-xs flex items-center justify-center shadow-xs';
+  }
+
+  const chosenIcon = document.getElementById(`opt-icon-${questionId}-${optionIndex}`);
+  if (chosenIcon) {
+    chosenIcon.innerHTML = `<span class="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-xs">✓</span>`;
+  }
+
+  updateTestProgressDisplay();
+  refreshIcons();
+}
+
+// Update questions answered counter
+function updateTestProgressDisplay() {
+  if (!currentActiveTest) return;
+  const total = currentActiveTest.questions.length;
+  const answered = Object.keys(currentTestAnswers).length;
+  const countBadge = document.getElementById('runner-answered-count');
+  if (countBadge) {
+    countBadge.innerText = `${answered} of ${total} Questions Answered`;
+    if (answered === total) {
+      countBadge.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200';
+    } else {
+      countBadge.className = 'text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-200';
+    }
   }
 }
 
@@ -528,13 +591,23 @@ function updateTimerDisplay() {
   }
 }
 
-// Submit Test Answers for Auto-Grading
+// Submit Test Answers for Auto-Grading (with validation)
 async function submitTestAnswers() {
+  if (!currentActiveTest) return;
+
+  const total = currentActiveTest.questions.length;
+  const answered = Object.keys(currentTestAnswers).length;
+
+  if (answered < total) {
+    const proceed = confirm(`You have answered ${answered} out of ${total} questions. Do you want to submit now?`);
+    if (!proceed) return;
+  }
+
   if (testTimerInterval) clearInterval(testTimerInterval);
 
   const submitBtn = document.getElementById('btn-submit-test');
   submitBtn.disabled = true;
-  submitBtn.innerText = 'Scoring Your Answers...';
+  submitBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Scoring Your Answers...`;
 
   try {
     const res = await fetch(`${API_BASE}/api/test/${currentActiveTest.id}/submit`, {
@@ -553,22 +626,29 @@ async function submitTestAnswers() {
     alert('Error submitting test: ' + err.message);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.innerText = 'Submit Test for Scoring';
+    submitBtn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 inline mr-1"></i> Submit Test for Scoring`;
     refreshIcons();
   }
 }
 
-// Render Results & Scorecard
+// Render Results & Scorecard strictly out of 10
 function renderTestResults(data) {
   document.getElementById('runner-action-bar').classList.add('hidden');
   const summaryCard = document.getElementById('test-result-summary');
 
-  // Stats
-  document.getElementById('test-stat-score').innerText = `${data.summary.correctCount} / ${data.summary.totalQuestions}`;
-  document.getElementById('test-stat-percentage').innerText = `${data.summary.scorePercentage}%`;
+  // Strictly calculate and display score out of 10
+  const scoreOutOf10 = data.summary.scoreOutOf10 !== undefined 
+    ? data.summary.scoreOutOf10 
+    : Number(((data.summary.correctCount / data.summary.totalQuestions) * 10).toFixed(1));
+
+  document.getElementById('test-stat-score').innerText = `${scoreOutOf10} / 10`;
+  const statCorrect = document.getElementById('test-stat-correct');
+  if (statCorrect) {
+    statCorrect.innerText = `${data.summary.correctCount} / ${data.summary.totalQuestions}`;
+  }
   document.getElementById('test-stat-grade').innerText = data.summary.grade;
 
-  // Passed / Failed Badge
+  // Passed / Failed Badge (Threshold 6/10)
   const passBadge = document.getElementById('test-passed-badge');
   if (data.summary.passed) {
     passBadge.innerText = 'PASSED';
@@ -578,21 +658,29 @@ function renderTestResults(data) {
     passBadge.className = 'px-4 py-1.5 rounded-full font-bold text-xs bg-rose-100 text-rose-800 border border-rose-300';
   }
 
-  // Highlight Options (Green for correct, Red for chosen wrong) and show explanation
+  // Highlight Options (Emerald for correct, Rose for student wrong choice) and show explanation
   data.breakdown.forEach((item) => {
     const correctBtn = document.getElementById(`opt-${item.questionId}-${item.correctOptionIndex}`);
     if (correctBtn) {
       correctBtn.classList.add('correct');
+      const correctBadge = document.getElementById(`badge-${item.questionId}-${item.correctOptionIndex}`);
+      if (correctBadge) {
+        correctBadge.className = 'w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center';
+      }
       const iconSpan = document.getElementById(`opt-icon-${item.questionId}-${item.correctOptionIndex}`);
-      if (iconSpan) iconSpan.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 inline"></i>`;
+      if (iconSpan) iconSpan.innerHTML = `<span class="px-2 py-0.5 rounded bg-emerald-200 text-emerald-900 font-bold text-xs">Correct ✓</span>`;
     }
 
     if (!item.isCorrect && item.selectedOptionIndex !== null) {
       const wrongBtn = document.getElementById(`opt-${item.questionId}-${item.selectedOptionIndex}`);
       if (wrongBtn) {
         wrongBtn.classList.add('wrong');
+        const wrongBadge = document.getElementById(`badge-${item.questionId}-${item.selectedOptionIndex}`);
+        if (wrongBadge) {
+          wrongBadge.className = 'w-7 h-7 rounded-lg bg-rose-600 text-white font-bold text-xs flex items-center justify-center';
+        }
         const iconSpan = document.getElementById(`opt-icon-${item.questionId}-${item.selectedOptionIndex}`);
-        if (iconSpan) iconSpan.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-600 inline"></i>`;
+        if (iconSpan) iconSpan.innerHTML = `<span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold text-xs">Your Choice ✗</span>`;
       }
     }
 
@@ -604,12 +692,14 @@ function renderTestResults(data) {
     }
   });
 
-  // Disable all option buttons
+  // Disable all option buttons after test completes
   document.querySelectorAll('.quiz-option-btn').forEach((btn) => {
     btn.disabled = true;
+    btn.style.cursor = 'default';
   });
 
   summaryCard.classList.remove('hidden');
+  summaryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   refreshIcons();
 }
 
@@ -623,7 +713,7 @@ function exitTestRunner() {
   refreshIcons();
 }
 
-// Toggle & Fetch Past Test History
+// Toggle & Fetch Past Test History (Strictly /10)
 async function toggleTestHistory() {
   const container = document.getElementById('test-history-container');
   const list = document.getElementById('test-history-list');
@@ -647,16 +737,21 @@ async function toggleTestHistory() {
       data.history.forEach((item) => {
         const row = document.createElement('div');
         row.className = 'p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-sm';
+        
+        const rawScore = item.scoreOutOf10 !== undefined 
+          ? item.scoreOutOf10 
+          : Number(((item.correctCount / item.totalQuestions) * 10).toFixed(1));
+
         row.innerHTML = `
           <div>
             <span class="font-semibold text-violet-700">${item.testTitle}</span>
             <p class="text-xs text-slate-500 mt-0.5">
-              ${item.correctCount}/${item.totalQuestions} correct • Grade ${item.grade}
+              ${item.correctCount}/${item.totalQuestions} questions correct • Grade ${item.grade}
             </p>
           </div>
           <div class="text-right">
             <span class="text-base font-extrabold ${item.passed ? 'text-emerald-600' : 'text-rose-600'}">
-              ${item.scorePercentage}%
+              ${rawScore}/10
             </span>
             <p class="text-[10px] text-slate-400">${formatDateTime(item.savedAt)}</p>
           </div>
@@ -859,14 +954,16 @@ function renderVivaEvaluation(evaluation) {
   const evalCard = document.getElementById('viva-evaluation-card');
   currentExaminerFeedback = evaluation.examinerFeedback;
 
-  document.getElementById('viva-eval-score').innerText = evaluation.score;
+  const numScore = Number(evaluation.score);
+  const scoreOutOf10 = numScore > 10 ? Number((numScore / 10).toFixed(1)) : numScore;
+  document.getElementById('viva-eval-score').innerText = scoreOutOf10;
 
   // Verdict badge
   const verdictBadge = document.getElementById('viva-eval-verdict');
-  verdictBadge.innerText = evaluation.verdict || 'Satisfactory';
-  if (evaluation.verdict === 'Excellent') {
+  verdictBadge.innerText = evaluation.verdict || (scoreOutOf10 >= 8 ? 'Excellent' : scoreOutOf10 >= 5 ? 'Satisfactory' : 'Needs Revision');
+  if (evaluation.verdict === 'Excellent' || scoreOutOf10 >= 8) {
     verdictBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
-  } else if (evaluation.verdict === 'Satisfactory') {
+  } else if (evaluation.verdict === 'Satisfactory' || scoreOutOf10 >= 5) {
     verdictBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300';
   } else {
     verdictBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300';
@@ -885,6 +982,7 @@ function renderVivaEvaluation(evaluation) {
   }
 
   evalCard.classList.remove('hidden');
+  evalCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   // Speak the feedback aloud
   speakTextAloud(evaluation.examinerFeedback);

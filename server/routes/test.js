@@ -178,18 +178,22 @@ router.post('/:id/submit', async (req, res) => {
   });
 
   const totalQuestions = test.questions.length;
+  const scoreOutOf10 = Number(((correctCount / totalQuestions) * 10).toFixed(1));
   const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
-  const passed = scorePercentage >= 60; // 60% passing threshold
-    // Automatically save result to MongoDB Atlas
+  const passed = scoreOutOf10 >= 6.0; // 6/10 passing threshold
+
+  // Automatically save result to database
   await saveTestResult({
     testId: test.id,
     testTitle: test.title,
     totalQuestions,
     correctCount,
+    scoreOutOf10,
     scorePercentage,
     passed,
-    grade: scorePercentage >= 85 ? 'A' : scorePercentage >= 70 ? 'B' : scorePercentage >= 60 ? 'C' : 'F'
+    grade: scoreOutOf10 >= 8.5 ? 'A' : scoreOutOf10 >= 7.0 ? 'B' : scoreOutOf10 >= 6.0 ? 'C' : 'F'
   });
+
   res.json({
     success: true,
     testId: test.id,
@@ -198,9 +202,10 @@ router.post('/:id/submit', async (req, res) => {
       totalQuestions,
       correctCount,
       incorrectCount: totalQuestions - correctCount,
+      scoreOutOf10,
       scorePercentage,
       passed,
-      grade: scorePercentage >= 85 ? 'A' : scorePercentage >= 70 ? 'B' : scorePercentage >= 60 ? 'C' : 'F'
+      grade: scoreOutOf10 >= 8.5 ? 'A' : scoreOutOf10 >= 7.0 ? 'B' : scoreOutOf10 >= 6.0 ? 'C' : 'F'
     },
     breakdown
   });
