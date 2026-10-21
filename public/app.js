@@ -38,21 +38,30 @@ function formatDateTime(isoString) {
   return `${dateStr} • ${timeStr}`;
 }
 
-// Health check function
+// Health check function with automatic polling & visual status updates
 async function checkServerHealth() {
   const statusText = document.getElementById('server-status-text');
+  const badge = statusText ? statusText.parentElement : null;
+  const dot = badge ? badge.querySelector('span:first-child') : null;
+
   try {
     const res = await fetch(`${API_BASE}/api/status`);
     if (res.ok) {
-      statusText.innerText = 'AI Server Online';
-    } else {
-      statusText.innerText = 'Server Notice';
+      if (statusText) statusText.innerText = 'AI Server Online';
+      if (badge) badge.className = 'flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-semibold text-emerald-700';
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+      return true;
     }
   } catch (e) {
-    statusText.innerText = 'Server Offline (Start server)';
-    console.warn('Backend server not reachable at:', API_BASE);
+    if (statusText) statusText.innerText = 'Server Offline (Run start_platform.bat)';
+    if (badge) badge.className = 'flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-200 rounded-full text-xs font-semibold text-rose-700';
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-rose-500';
   }
+  return false;
 }
+
+// Auto-check server status every 4 seconds so it connects automatically when server starts
+setInterval(checkServerHealth, 4000);
 
 // =========================================================================
 // 1. NAVIGATION TAB SWITCHING
